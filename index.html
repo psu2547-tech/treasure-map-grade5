@@ -421,6 +421,15 @@
       .play-status.info{background:var(--teal-soft);}
       .play-status.success{background:var(--green-soft); border:2px solid var(--green);}
       .play-status.fail{background:var(--red-soft); border:2px solid var(--red);}
+      /* 땅 파기로 보물을 찾았을 때: 성공 메시지와 함께 그 보물의 그림을 크게 보여 준다 */
+      .play-status .found-treasure{display:flex; flex-direction:column; align-items:center; gap:9px; text-align:center;}
+      .play-status .found-treasure-img{
+        width:104px; height:104px; object-fit:contain;
+        filter:drop-shadow(0 5px 9px rgba(30,50,80,.28));
+        animation:foundPop .45s ease;
+      }
+      @keyframes foundPop{0%{transform:scale(.35)}60%{transform:scale(1.16)}100%{transform:scale(1)}}
+      @media (prefers-reduced-motion: reduce){ .play-status .found-treasure-img{animation:none;} }
       .badge{
         display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:4px 12px;
         font-size:13px; font-weight:900; background:var(--gold); color:#4a3205;
@@ -1258,18 +1267,37 @@
       return svgUse(entry ? entry.icon : 'i-chest', cls);
     }
     var toastTimer = null;
-    function toast(msg) {
-      var t = $('toast'); t.textContent = msg; t.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+    var toastSeq = 0;
+    var toastShownAt = 0;
+    function hideToast() {
+      var t = $('toast');
+      if (t) t.classList.remove('show');
     }
+    function toast(msg) {
+      var t = $('toast'); if (!t) return;
+      t.textContent = msg; t.classList.add('show');
+      toastShownAt = Date.now();
+      var seq = ++toastSeq;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { if (seq === toastSeq) hideToast(); }, 2600);
+    }
+    /* 토스트 감시: 예약된 사라짐 타이머가 어떤 이유로 실행되지 않아도
+       (타이머가 지워지거나 브라우저가 백그라운드에서 타이머를 늦추는 경우)
+       안내 말이 화면에 오래 남지 않게, 1초마다 확인해서 뜬 지 3초가 지난
+       안내 말은 반드시 지운다 */
+    setInterval(function () {
+      if (toastShownAt && Date.now() - toastShownAt > 3000) {
+        toastShownAt = 0;
+        hideToast();
+      }
+    }, 1000);
     function showScreen(id) {
       /* 화면이 바뀌면 떠 있던 안내 말(토스트)은 바로 지운다. 이전 화면이나
          이전 학생에게 뜬 안내가 새 화면에 계속 남아 있지 않게 하기
          위해서다. (토스트 자체는 toast()의 타이머로도 몇 초 뒤에
          자동으로 사라진다) */
       var t = $('toast');
-      if (t) { t.classList.remove('show'); clearTimeout(toastTimer); }
+      if (t) { t.classList.remove('show'); clearTimeout(toastTimer); toastShownAt = 0; toastSeq++; }
       ['screen-entry', 'screen-hub', 'screen-make', 'screen-play', 'screen-teacher'].forEach(function (s) {
         $(s).classList.toggle('active', s === id);
       });
@@ -1651,6 +1679,11 @@
         mySolves = [];
         solvesLoaded = false;
       }
+      /* 찾은 보물 종류는 기록의 핵심이다. 지도 데이터에서 확실히 뽑아
+         종류(kind)와 이름(ko)을 함께 저장한다. 한쪽이 빠져도 다른 쪽으로
+         복원할 수 있게 하기 위해서다 */
+      var solvedKind = (data.treasure && (data.treasure.kind || data.treasure.treasureKind)) || data.treasureKind || null;
+      if (!solvedKind || !TREASURES[solvedKind]) solvedKind = 'gem';
       var rec = {
         ownerCls: data.cls || state.cls,
         ownerNum: data.makerNum || null,
@@ -1658,7 +1691,8 @@
         title: (data.title || '').trim(),
         diff: DIFFS[data.diff] ? data.diff : 'easy',
         placeCount: Object.keys(data.places || {}).length,
-        treasureKind: (data.treasure && data.treasure.kind) || 'gem',
+        treasureKind: solvedKind,
+        treasureKo: TREASURES[solvedKind].ko,
         solvedAt: Date.now()
       };
       var skey = String(rec.ownerNum || 'x') + '_' + (rec.mapId || ('t' + rec.solvedAt));
@@ -1670,6 +1704,48 @@
         solvesRef(state.cls).child(String(state.num)).child(skey).set(rec).catch(function () { /* 실패해도 화면 기록은 유지 */ });
       }
       renderHubSolves();
+    }
+    /* 푼 기록에서 찾은 보물 종류를 꺼낸다. 종류가 다른 이름으로 저장돼
+       있거나 이름(ko)만 남아 있어도 최대한 복원한다 */
+    function solveKindOf(s) {
+      if (!s || typeof s !== 'object') return null;
+      var k = s.treasureKind || s.kind || (s.treasure && s.treasure.kind) || null;
+      if (k && TREASURES[k]) return k;
+      if (s.treasureKo) {
+        var keys = Object.keys(TREASURES);
+        for (var i = 0; i < keys.length; i++) {
+          if (TREASURES[keys[i]].ko === s.treasureKo) return keys[i];
+        }
+      }
+      return null;
+    }
+    /* 종류가 빠진 채 저장된 푼 기록은, 원본 지도에서 그 지도의 보물
+       종류를 다시 찾아 채워 넣는다. 화면 표시도 고치고 서버 기록에도
+       채워 넣어, 다음에 들어와도 종류가 바로 뜨게 한다 */
+    function repairSolveKinds() {
+      var missing = mySolves.filter(function (s) { return !solveKindOf(s) && s.ownerNum != null && s.mapId; });
+      if (!missing.length || !FB.ready || !state.cls || !state.num) return;
+      mapsRef(state.cls).once('value').then(function (snap) {
+        var maps = snap.val() || {};
+        var changed = false;
+        missing.forEach(function (s) {
+          var recs = studentMapsList(maps[s.ownerNum]);
+          for (var i = 0; i < recs.length; i++) {
+            if (String(recs[i]._id) === String(s.mapId) && recs[i].treasure && TREASURES[recs[i].treasure.kind]) {
+              s.treasureKind = recs[i].treasure.kind;
+              s.treasureKo = TREASURES[s.treasureKind].ko;
+              changed = true;
+              if (s._key) {
+                solvesRef(state.cls).child(String(state.num)).child(s._key)
+                  .update({ treasureKind: s.treasureKind, treasureKo: s.treasureKo })
+                  .catch(function () { /* 채워 넣기 실패 시 화면 표시만 유지 */ });
+              }
+              break;
+            }
+          }
+        });
+        if (changed) renderHubSolves();
+      }).catch(function () { /* 복원 실패 시 기존 기록 표시를 그대로 둔다 */ });
     }
     function fetchSolves() {
       var ikey = identityKey();
@@ -1687,6 +1763,9 @@
           var r = node[k]; if (r && typeof r === 'object') { r._key = k; r._solver = ikey; }
           return r;
         }).filter(function (r) { return r && typeof r === 'object'; });
+        /* 서버 기록의 보물 종류를 한 번 정규화한다: 종류가 다른 이름으로
+           들어 있어도 treasureKind로 맞춰서 목록·모음이 놓치지 않게 한다 */
+        server.forEach(function (s) { var k = solveKindOf(s); if (k) s.treasureKind = k; });
         var onServer = {};
         server.forEach(function (s) { onServer[s._key] = true; });
         /* 서버에 아직 못 올라간 방금 푼 기록은 세션 기록을 유지한다.
@@ -1695,6 +1774,7 @@
         mySolves = server.concat(mySolves.filter(function (s) { return s._solver === ikey && !onServer[s._key]; }));
         solvesLoaded = true;
         renderHubSolves();
+        repairSolveKinds();
         if ($('friendModal').classList.contains('open')) renderFriendList();
       }).catch(function () { renderHubSolves(); });
     }
@@ -1709,14 +1789,15 @@
         return;
       }
       list.forEach(function (s) {
+        var sk = solveKindOf(s);
         var item = el('div', 'shelf-item');
         var av = el('span', 'avatar');
-        av.appendChild(artEl(TREASURES[s.treasureKind] || TREASURES.gem));
+        av.appendChild(artEl(sk ? TREASURES[sk] : TREASURES.gem));
         item.appendChild(av);
         var meta = el('div', 'meta');
         meta.appendChild(el('div', 'nm', (s.ownerCls || '') + ' ' + (s.ownerNum ? s.ownerNum + '번' : '') + ' 친구의 지도'));
         var dt = (DIFFS[s.diff] ? DIFFS[s.diff].ko : '') + ' · 장소 ' + (s.placeCount || 0) + '개';
-        if (s.treasureKind && TREASURES[s.treasureKind]) dt += ' · ' + TREASURES[s.treasureKind].ko + ' 찾음';
+        if (sk) dt += ' · ' + TREASURES[sk].ko + ' 찾음';
         if (s.solvedAt) dt += ' · ' + formatSubmittedAt(s.solvedAt) + '에 풀었어요';
         meta.appendChild(el('div', 'dt', dt));
         item.appendChild(meta);
@@ -1730,7 +1811,8 @@
       grid.innerHTML = '';
       var found = {};
       mySolves.forEach(function (s) {
-        if (s.treasureKind && TREASURES[s.treasureKind]) found[s.treasureKind] = true;
+        var k = solveKindOf(s);
+        if (k) found[k] = true;
       });
       var cntEl = $('hubTreasureCount');
       if (cntEl) cntEl.textContent = Object.keys(found).length + ' / ' + Object.keys(TREASURES).length + '종';
@@ -2930,7 +3012,7 @@
       }
       gateLi(gates.countOk, '장소 6개 이상 놓기 (지금 ' + gates.cnt + '개)');
       gateLi(gates.pathOk, '보물까지 가는 길이 막히지 않기' + (gates.path ? '' : ' (지금은 가는 길이 막혔어요)'));
-      if (gates.sideNeeded) gateLi(gates.sidesOk, '보물 왼쪽 칸이나 오른쪽 칸 �� 한 곳에 장소 놓기');
+      if (gates.sideNeeded) gateLi(gates.sidesOk, '보물 왼쪽 칸이나 오른쪽 칸 중 한 곳에 장소 놓기');
       p.appendChild(gl);
       /* 3단계는 [이전]·[다음]. [다음]은 위 게이트 조건을 모두 채웠을 때만
          켜져서, 조건을 검사하는 유일한 4단계 입구이다 */
@@ -3896,7 +3978,7 @@
       renderPlaySentences(-1);
       var st = $('playStatus');
       st.className = 'play-status show info';
-      st.innerHTML = (data.makerNum ? data.makerNum + '번 ' : '') + '친구가 숨긴 보물을 찾아요! 안내문을 읽고 방향 도우미로 캐릭터를 직접 움직여 보물까지 걸어간 뒤, <b>그 칸에서 땅 파기</b>를 눌러 보세요.';
+      st.innerHTML = (data.makerNum ? data.makerNum + '번 ' : '') + '친구가 숨긴 보물을 찾아요! 안내문을 읽고 방향 도우미로 캐릭터를 직접 움직여 안내문대로 걸어간 뒤, <b>땅 파기</b>를 눌러 보세요.';
       $('playFoundActions').style.display = 'none';
       $('playMapHint').textContent = '안내문을 읽고 방향 도우미로 캐릭터를 움직여 보세요. 보물이 있을 칸에 서면 땅 파기를 눌러요.';
       setPlayWalker();
@@ -3905,7 +3987,11 @@
       /* 풀기 화면에서는 칸을 눌러 찍지 않는다. 캐릭터를 직접 걸어 보물 칸에 서서 땅을 판다. */
       buildGrid($('playGrid'), state.play.data, { showTreasure: false });
     }
-    /* 풀기 전용 통행 판정: 보물이 숨은 길 칸은 들어갈 수 있고, 장소 칸과 지도 밖만 막힌다 */
+    /* 풀기 통행 판정은 만들기와 일부러 다르게 둔다: 장소 칸·지도 밖은
+       막혀 있지만, 보물이 숨은 칸은 들어갈 수 있다. 푸는 학생은 안내문을
+       읽고 보물 위치까지 직접 걸어가서, 보물 칸에 서서 땅 파기를 눌러야
+       보물을 찾은 것으로 판정한다. (만들기 걸어 보기에서는 보물 칸이
+       벽이라 보물 앞 칸에 멈추는 것이 맞고, 그 규칙은 그대로 둔다.) */
     function isBlockedPlay(m, r, c) {
       if (!inBounds(r, c)) return true;
       if (m.places[key(r, c)]) return true;
@@ -3932,7 +4018,12 @@
       if (!P || !P.data.treasure) return;
       var st = $('playStatus');
       if (P.found) { toast('이미 보물을 찾았어요!'); return; }
-      if (playWalk.r === P.data.treasure.r && playWalk.c === P.data.treasure.c) {
+      /* 보물 판정은 캐릭터가 서 있는 칸으로만 한다. 푸는 학생은 안내문을
+         읽고 보물 위치까지 걸어가서, 보물 칸에 서서 땅 파기를 눌러야 한다.
+         앞·왼쪽·오른쪽 옆 칸에 서서 파는 것으로는 찾은 것이 되지 않는다. */
+      var T = P.data.treasure;
+      var digHit = (playWalk.r === T.r && playWalk.c === T.c);
+      if (digHit) {
         P.found = true;
         recordSolve(P.data);
         var cell = $('playGrid').children[P.data.treasure.r * SIZE + P.data.treasure.c];
@@ -3944,9 +4035,18 @@
         SFX.good();
         fireConfetti();
         st.className = 'play-status show success';
-        /* 성공 메시지에는 친구 번호와 찾은 보물 종류를 함께 보여 준다 */
+        /* 성공 메시지에는 친구 번호와 찾은 보물 종류를 함께 보여 주고,
+           그 보물의 그림도 크게 함께 보여 줘서 찾은 보물이 뭔지 바로 알 수 있게 한다 */
         var foundTreasure = TREASURES[P.data.treasure.kind] || TREASURES.gem;
-        st.innerHTML = '<b>' + (P.data.makerNum ? P.data.makerNum + '번 ' : '') + '친구의 보물(' + esc(foundTreasure.ko) + ')을 찾았다!</b> 안내문을 따라 정확히 걸어왔어요.';
+        st.innerHTML = '';
+        var foundBox = el('div', 'found-treasure');
+        var foundImg = artEl(foundTreasure, 'found-treasure-img');
+        if (foundImg.tagName === 'IMG') foundImg.alt = foundTreasure.ko;
+        foundBox.appendChild(foundImg);
+        var foundMsg = el('div');
+        foundMsg.innerHTML = '<b>' + (P.data.makerNum ? P.data.makerNum + '번 ' : '') + '친구의 보물(' + esc(foundTreasure.ko) + ')을 찾았다!</b> 안내문을 따라 정확히 걸어왔어요.';
+        foundBox.appendChild(foundMsg);
+        st.appendChild(foundBox);
         $('playFoundActions').style.display = 'flex';
       } else {
         SFX.bad();
@@ -3958,7 +4058,7 @@
       if (!state.play) return;
       var d = DIRS[playWalk.dir];
       var nr = playWalk.r + d.dr, nc = playWalk.c + d.dc;
-      if (isBlockedPlay(state.play.data, nr, nc)) { SFX.bump(); bumpAnim($('playWalker'), playWalk.dir); toast('앞이 막혀서 갈 수 없어요. 건물 칸으로는 못 들어가요.'); return; }
+      if (isBlockedPlay(state.play.data, nr, nc)) { SFX.bump(); bumpAnim($('playWalker'), playWalk.dir); toast('앞이 막혀서 갈 수 없어요.'); return; }
       playWalk.r = nr; playWalk.c = nc; SFX.step(); setPlayWalker();
     });
     $('helperLeft').addEventListener('click', function () {

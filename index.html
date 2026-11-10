@@ -2001,12 +2001,17 @@
           locChecks.push({ si: si, ok: ok, label: label });
         });
       }
-      /* 도착 조건은 '설명문 안에 어떤 문장이 들어 있는가'로만 본다.
+      /* 도착 조건:
+         - 안내문대로 걸어 보물 옆 칸에 딱 서야 한다(adjacent).
          - 위치 문장(It's in front of you. / It's on your left. /
-           It's on your right.) 중 하나가 안내문 어딘가에 있으면 된다.
-         - 보통·도전은 여기에 'It's next to the ___.' 문장도 있어야 한다.
-         두 문장이 안내문의 어디에, 어떤 순서로 쓰였는지는 따지지 않는다.
-         걷기 자체는 안내문대로 걸어 보물 옆 칸에 딱 서야 성공이다. */
+           It's on your right.) 중 하나가 안내문 어딘가에 있어야 하고,
+           쓴 위치 문장이 마지막에 선 자리에서 실제로 맞아야 한다.
+           (문장이 안내문의 어디에, 어떤 순서로 쓰였는지는 따지지 않지만,
+           내용이 거짓이면 도착으로 인정하지 않는다. 예전에는 locChecks를
+           계산만 하고 판정에 쓰지 않아, 보물이 오른쪽인데 "It's on your
+           left."라고 써도 도착으로 인정되는 버그가 있었다.)
+         - 보통·도전은 'It's next to the ___.' 문장도 있어야 하고,
+           그 문장이 가리키는 장소가 실제로 보물 옆에 있어야 한다. */
       var posSis = [];
       parsed.forEach(function (p, si) {
         if (p.kind === 'loc' && (p.loc === 'front' || p.loc === 'side')) posSis.push(si);
@@ -2014,13 +2019,32 @@
       var hasPosLoc = posSis.length > 0;
       var lastPos = hasPosLoc ? parsed[posSis[posSis.length - 1]] : null;
       var needNextTo = !!(DIFFS[m.diff] && DIFFS[m.diff].needNextTo);
-      var arrived = !!m.treasure && adjacent && hasPosLoc && (!needNextTo || hasNextTo);
+      /* 위치 문장·next to 문장이 실제로 맞는지를 locChecks에서 모은다 */
+      var posLocOk = true, nextToOk = true;
+      locChecks.forEach(function (chk) {
+        var p = parsed[chk.si];
+        if (!p || p.kind !== 'loc') return;
+        if (p.loc === 'front' || p.loc === 'side') { if (!chk.ok) posLocOk = false; }
+        else if (p.loc === 'nextto') { if (!chk.ok) nextToOk = false; }
+      });
+      /* 마지막에 선 자리에서 본 보물의 실제 위치 (실패 안내 문구용) */
+      var actualPosLabel = null, actualPosKo = null;
+      if (m.treasure && adjacent) {
+        var F2 = DIRS[final.dir], L2 = DIRS[(final.dir + 3) % 4], R2 = DIRS[(final.dir + 1) % 4];
+        if (final.r + F2.dr === m.treasure.r && final.c + F2.dc === m.treasure.c) { actualPosLabel = "It's in front of you."; actualPosKo = '바로 앞'; }
+        else if (final.r + L2.dr === m.treasure.r && final.c + L2.dc === m.treasure.c) { actualPosLabel = "It's on your left."; actualPosKo = '왼쪽'; }
+        else if (final.r + R2.dr === m.treasure.r && final.c + R2.dc === m.treasure.c) { actualPosLabel = "It's on your right."; actualPosKo = '오른쪽'; }
+      }
+      var arrived = !!m.treasure && adjacent && hasPosLoc && posLocOk &&
+        (!needNextTo || (hasNextTo && nextToOk));
       /* 성공했을 때 반짝일 칸은 위치 문장이 가리키는 칸이 아니라 보물 칸 자체다 */
       var posTarget = arrived ? { r: m.treasure.r, c: m.treasure.c } : null;
       return {
         sentences: sentences, parsed: parsed, frames: frames, final: final,
         adjacent: adjacent, locChecks: locChecks, arrived: arrived,
         hasPosLoc: hasPosLoc, lastPos: lastPos, posTarget: posTarget,
+        posLocOk: posLocOk, nextToOk: nextToOk,
+        actualPosLabel: actualPosLabel, actualPosKo: actualPosKo,
         hasNextTo: hasNextTo, needNextTo: needNextTo,
         turnCount: turnCount, mentioned: mentioned,
         blockedNotes: blockedNotes, dirCount: dirCount
@@ -3295,8 +3319,22 @@
               (Math.abs(sim.final.r - m.treasure.r) + Math.abs(sim.final.c - m.treasure.c)) + '칸 떨어져 있어요.';
             else if (!sim.hasPosLoc) why = '보물 옆까지는 왔지만, 보물이 앞인지 왼쪽인지 오른쪽인지 알려 주는 문장이 없어요. ' +
               '"It\'s in front of you." / "It\'s on your left." / "It\'s on your right." 중 하나를 안내문 어딘가에 꼭 써 보세요.';
+            else if (!sim.posLocOk) {
+              var badPosChk = null;
+              sim.locChecks.forEach(function (chk) {
+                var pp = sim.parsed[chk.si];
+                if (!badPosChk && pp && pp.kind === 'loc' && (pp.loc === 'front' || pp.loc === 'side') && !chk.ok) badPosChk = chk;
+              });
+              why = '보물 옆까지는 왔지만, 위치 문장이 실제와 달라요. ' +
+                (badPosChk ? '"' + badPosChk.label + '"라고 썼는데, ' : '') +
+                (sim.actualPosKo ? '마지막에 선 자리에서 보물은 ' + sim.actualPosKo + '에 있어요. ' +
+                  '안내문의 위치 문장을 "' + sim.actualPosLabel + '"로 고쳐 보세요.'
+                  : '마지막에 선 자리에서 본 보물의 위치에 맞게 위치 문장을 고쳐 보세요.');
+            }
             else if (sim.needNextTo && !sim.hasNextTo) why = '보물 옆까지는 왔지만, "It\'s next to the ___." 문장이 없어요. ' +
               '지금 난이도에서는 위치 문장과 next to 문장이 둘 다 있어야 해요. 안내문 어딘가에 next to 문장을 써 보세요.';
+            else if (sim.needNextTo && !sim.nextToOk) why = '보물 옆까지는 왔지만, "It\'s next to the ___." 문장이 실제와 달라요. ' +
+              '보물 바로 옆에 있는 장소의 이름으로 next to 문장을 써 보세요.';
             else why = '보물 옆에 도착했지만, 아직 조건이 다 맞지 않아요. 체크리스트를 확인해 보세요.';
             ws.innerHTML = '<b>아직 도착하지 못했어요.</b><br />' + esc(why) +
               (sim.blockedNotes.length ? '<br />' + esc(sim.blockedNotes[0].msg) : '');

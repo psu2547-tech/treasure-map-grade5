@@ -1,0 +1,3498 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>나만의 보물지도 만들기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#e8f4fc; --bg2:#d3e9f8; --card:#ffffff; --card2:#f4fafe;
+        --ink:#1d2f52;
+        --ink-soft:#5d6d8c; --line:#cfdff0;
+        --teal:#1e4fa3; --teal-dark:#173a7d; --teal-soft:#e2ecfb;
+        --coral:#ff5d8f; --coral-dark:#d63d70; --coral-soft:#ffe3ee;
+        --gold:#e9a13b; --green:#43a35f; --green-soft:#e2f4e4;
+        --red:#d9534f; --red-soft:#fdecea;
+        --road:#eef3f8; --road-line:#c9d9ea; --grass:#cfe6bd;
+        --shadow:0 4px 14px rgba(30,70,140,.13);
+        --radius:16px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#1d2422; --bg2:#232d2a; --card:#2b3532; --card2:#313d39;
+          --ink:#f2ede1; --ink-soft:#b9b2a2; --line:#46524d;
+          --teal:#6fb3bd; --teal-dark:#9fd0d8; --teal-soft:#2c444a;
+          --coral:#f08a54; --coral-dark:#f5a377; --coral-soft:#4a3527;
+          --gold:#f0b45a; --green:#7cc785; --green-soft:#2e4630;
+          --red:#ef8a86; --red-soft:#4d3230;
+          --road:#3d453f; --road-line:#525c52; --grass:#3c5a38;
+          --shadow:0 4px 14px rgba(0,0,0,.4);
+        }
+      }
+      *{box-sizing:border-box;}
+      html,body{margin:0;padding:0;}
+      body{
+        font-family:"Noto Sans KR",sans-serif; color:var(--ink);
+        background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+        min-height:100vh; -webkit-tap-highlight-color:transparent;
+      }
+      .font-display{font-family:"Jua","Noto Sans KR",sans-serif; letter-spacing:.01em;}
+      button{font-family:inherit; cursor:pointer;}
+      input,textarea,select{font-family:inherit;}
+      .screen{display:none; max-width:1180px; margin:0 auto; padding:16px 16px 48px;}
+      .screen.active{display:block;}
+
+      /* ---------- 공통 버튼 ---------- */
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        border:none; border-radius:14px; padding:13px 22px; font-size:17px; font-weight:700;
+        background:var(--teal); color:#fff; box-shadow:var(--shadow);
+        transition:transform .08s ease, background .15s ease;
+      }
+      .btn:active{transform:scale(.97);}
+      .btn.coral{background:var(--coral);}
+      .btn.gold{background:var(--gold); color:#4a3205;}
+      .btn.ghost{background:var(--card); color:var(--ink); border:2px solid var(--line); box-shadow:none;}
+      .btn:disabled{opacity:.45; cursor:not-allowed; box-shadow:none;}
+      .btn.big{font-size:20px; padding:16px 30px; border-radius:16px;}
+      .btn.small{font-size:14px; padding:9px 14px; border-radius:11px;}
+      .icon-btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:6px;
+        width:44px; height:44px; border-radius:12px; border:2px solid var(--line);
+        background:var(--card); color:var(--ink); font-size:19px; box-shadow:none;
+      }
+      .icon-btn.wide{width:auto; padding:0 14px; font-size:15px; font-weight:700;}
+      .home-btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:7px;
+        width:auto; height:44px; padding:0 15px; border-radius:12px;
+        border:2px solid var(--teal); background:var(--card); color:var(--teal-dark);
+        font-size:15px; font-weight:900; white-space:nowrap; flex:none;
+      }
+      .home-btn svg{width:19px; height:19px; flex:none;}
+      .home-btn:active{transform:scale(.97);}
+
+      /* ---------- 상단 바 ---------- */
+      .topbar{
+        display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+        padding:6px 2px 14px;
+      }
+      .topbar .who{
+        display:flex; align-items:center; gap:9px; background:var(--card);
+        border:2px solid var(--line); border-radius:999px; padding:5px 14px 5px 6px;
+        font-weight:700; font-size:15px;
+      }
+      .topbar .who .avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;}
+      .topbar .spacer{flex:1;}
+      .topbar .title{font-size:21px; color:var(--teal-dark);}
+
+      /* ---------- 입장 화면 ---------- */
+      .entry-wrap{max-width:640px; margin:4vh auto 0;}
+      .entry-card{background:var(--card); border:2px solid var(--line); border-radius:24px; box-shadow:var(--shadow); padding:28px 26px 30px;}
+      .entry-card h1{font-size:34px; margin:0 0 6px; color:var(--teal-dark); text-align:center;}
+      .entry-card .sub{text-align:center; color:var(--ink-soft); font-size:15px; margin:0 0 22px; line-height:1.55;}
+      .field-label{font-weight:900; font-size:16px; margin:20px 0 10px; display:flex; align-items:center; gap:8px;}
+      .field-label .step-no{background:var(--coral); color:#fff; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;}
+      .class-chips{display:grid; grid-template-columns:repeat(5,1fr); gap:9px;}
+      .class-chip{
+        border:3px solid var(--line); background:var(--card2); border-radius:14px;
+        padding:13px 4px; font-size:19px; font-weight:900; color:var(--ink);
+        font-family:"Jua",sans-serif;
+      }
+      .class-chip.selected{border-color:var(--teal); background:var(--teal-soft); color:var(--teal-dark);}
+      .name-input{
+        width:100%; font-size:20px; font-weight:700; padding:14px 16px;
+        border:3px solid var(--line); border-radius:14px; background:var(--card2); color:var(--ink);
+      }
+      .name-input:focus{outline:none; border-color:var(--teal);}
+      .char-row{display:grid; grid-template-columns:repeat(4,1fr); gap:9px;}
+      .char-chip{
+        border:3px solid var(--line); background:var(--card2); border-radius:14px;
+        padding:10px 4px 8px; display:flex; flex-direction:column; align-items:center; gap:4px;
+        font-weight:700; font-size:14px; color:var(--ink);
+      }
+      .char-chip svg{width:44px; height:44px;}
+      .char-chip.selected{border-color:var(--coral); background:var(--coral-soft);}
+      .entry-actions{margin-top:26px; display:flex; flex-direction:column; gap:10px;}
+      .code-open-box{margin-top:22px; border-top:2px dashed var(--line); padding-top:18px;}
+      .code-row{display:flex; gap:8px;}
+      .code-row input{
+        flex:1; min-width:0; font-size:14px; padding:12px; border:2px solid var(--line);
+        border-radius:12px; background:var(--card2); color:var(--ink);
+      }
+
+      /* ---------- 단계 바 ---------- */
+      .stepbar{display:flex; gap:8px; margin:2px 0 16px; flex-wrap:wrap;}
+      .step-tab{
+        flex:1; min-width:130px; border:3px solid var(--line); background:var(--card);
+        border-radius:14px; padding:11px 10px; text-align:left; color:var(--ink);
+        display:flex; align-items:center; gap:10px;
+      }
+      .step-tab .n{
+        width:30px; height:30px; border-radius:50%; background:var(--road); color:var(--ink-soft);
+        display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; flex:none;
+        font-family:"Jua",sans-serif;
+      }
+      .step-tab .t{font-weight:900; font-size:15px; line-height:1.25;}
+      .step-tab .t small{display:block; font-weight:500; color:var(--ink-soft); font-size:12px;}
+      .step-tab.current{border-color:var(--teal); background:var(--teal-soft);}
+      .step-tab.current .n{background:var(--teal); color:#fff;}
+      .step-tab.done .n{background:var(--green); color:#fff;}
+
+      /* ---------- 만들기 레이아웃 ---------- */
+      .make-layout{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:18px; align-items:start;}
+      @media (max-width:920px){ .make-layout{grid-template-columns:1fr;} }
+      .map-card{background:var(--card); border:2px solid var(--line); border-radius:20px; padding:14px; box-shadow:var(--shadow);}
+      .map-head{display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+      .map-head .map-title{font-size:19px; color:var(--teal-dark);}
+      .compass{margin-left:auto; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink-soft);}
+      .compass .rose{
+        width:40px; height:40px; border-radius:50%; border:2px solid var(--line); background:var(--card2);
+        position:relative; flex:none;
+      }
+      .compass .rose .needle{
+        position:absolute; left:50%; top:50%; width:0; height:0;
+        border-left:6px solid transparent; border-right:6px solid transparent;
+        border-bottom:13px solid var(--coral);
+        transform-origin:50% 100%; transition:transform .3s ease;
+      }
+      .compass .rose .nlab{position:absolute; top:1px; left:0; right:0; text-align:center; font-size:9px; font-weight:900; color:var(--ink-soft);}
+
+      .grid-wrap{position:relative; width:100%; max-width:640px; margin:0 auto;}
+      .grid{
+        display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
+        background:var(--road-line); padding:4px; border-radius:14px;
+      }
+      .cell{
+        aspect-ratio:1/1; border-radius:9px; background:var(--road); border:none; padding:0;
+        position:relative; display:flex; align-items:center; justify-content:center;
+        overflow:hidden; width:100%;
+      }
+      .cell.road-cell{cursor:pointer;}
+      .cell .cell-icon{width:72%; height:72%; pointer-events:none;}
+      .cell .cell-name{
+        position:absolute; left:0; right:0; bottom:2px; text-align:center;
+        font-size:clamp(8px,1.6vw,11px); font-weight:900; color:#fff;
+        text-shadow:0 1px 3px rgba(0,0,0,.45); pointer-events:none; line-height:1.1; padding:0 1px;
+      }
+      .cell.start-cell{background:var(--green);}
+      .cell.start-cell .start-label{
+        color:#fff; font-weight:900; font-size:clamp(9px,2vw,14px); font-family:"Jua",sans-serif;
+        letter-spacing:.04em; pointer-events:none; text-align:center; line-height:1.15;
+      }
+      .cell.start-cell .start-arrow{color:#ffe9a8; font-size:clamp(10px,2.4vw,17px); line-height:1; pointer-events:none;}
+      .cell.treasure-cell{background:var(--grass); outline:4px solid var(--gold); outline-offset:-4px;}
+      .cell .hidden-label{
+        position:absolute; left:0; right:0; bottom:2px; text-align:center;
+        font-size:clamp(7px,1.4vw,10px); font-weight:900; color:#8a5a00;
+        letter-spacing:.08em; pointer-events:none;
+      }
+      .cell.guessable{cursor:pointer;}
+      .cell.guessable:hover{outline:3px solid var(--gold); outline-offset:-3px;}
+      .cell.guess-wrong{animation:shake .4s ease;}
+      .cell.found-cell{outline:4px solid var(--gold); outline-offset:-4px;}
+      @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+      .walker{
+        /* 지도 격자(안쪽 여백 4px + 칸 사이 4px×6)를 정확히 나눈 한 칸 크기.
+           예전 계산은 칸 사이 간격을 빼지 않아 오른쪽·아래쪽 칸으로 갈수록
+           마커가 칸 가운데에서 조금씩 어긋났다. */
+        position:absolute; width:calc((100% - 32px)/7); aspect-ratio:1/1; z-index:5;
+        transition:left .38s ease, top .38s ease; pointer-events:none;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .walker .walker-inner{
+        width:88%; height:88%; border-radius:50%; background:#fff;
+        border:3px solid var(--teal-dark); box-shadow:0 3px 8px rgba(0,0,0,.25);
+        position:relative; flex:none;
+        /* 방향이 바뀌면 원 안의 캐릭터와 화살표가 함께 이 중심을 축으로 돈다 */
+        transition:transform .25s ease;
+      }
+      /* 캐릭터를 담은 span: 원 전체를 덮는 flex 상자로 만들어 SVG를 정중앙에 놓는다.
+         인라인 SVG의 베이스라인 여백 때문에 캐릭터가 아래로 밀리던 문제도 함께 없앤다. */
+      .walker .walker-inner > span:first-child{
+        position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+        line-height:0;
+      }
+      .walker svg{display:block; width:80%; height:80%; flex:none;}
+      .walker .dir-arrow{
+        position:absolute; left:50%; top:-11px; z-index:6;
+        width:0; height:0;
+        border-left:7px solid transparent; border-right:7px solid transparent;
+        border-bottom:11px solid var(--coral);
+        transform:translateX(-50%);
+      }
+      .walker.bump{animation:bump .3s ease;}
+      @keyframes bump{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--bx,0),var(--by,0))}}
+      .map-hint{font-size:13.5px; color:var(--ink-soft); text-align:center; margin:10px 2px 0; line-height:1.5;}
+
+      /* ---------- 옆 패널 ---------- */
+      .panel{background:var(--card); border:2px solid var(--line); border-radius:20px; padding:18px; box-shadow:var(--shadow);}
+      .panel h2{margin:0 0 6px; font-size:21px; color:var(--teal-dark);}
+      .panel .desc{font-size:14.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 14px;}
+      .panel .desc b{color:var(--ink);}
+      /* 보물 종류가 11가지로 늘어서, 4열 격자에 작은 칩으로 가지런히 정리한다 */
+      .treasure-row{display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+      .treasure-row .pick-chip{font-size:12px; padding:7px 1px 6px; line-height:1.2;}
+      .treasure-row .pick-chip svg{width:30px; height:30px;}
+      /* ---------- 문장 도움(칩) 접기 패널 ---------- */
+      .frames-help-toggle{
+        width:100%; margin-top:4px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+        border:2px solid var(--teal); background:var(--teal-soft); color:var(--teal-dark);
+        border-radius:14px; padding:12px 15px; font-size:16px; font-weight:900; text-align:left;
+      }
+      .frames-help-toggle .chev{font-size:14px; flex:none; transition:transform .2s ease;}
+      .frames-help-toggle.open .chev{transform:rotate(180deg);}
+      .frames-help{
+        border:2px solid var(--line); border-top:none; border-radius:0 0 14px 14px;
+        padding:2px 13px 14px; margin-top:-6px; background:var(--card2);
+      }
+      .frames-help .frames-label:first-child{margin-top:10px;}
+      .place-tabs{display:flex; gap:7px; margin-bottom:11px;}
+      .place-tab{
+        flex:1; border:3px solid var(--line); background:var(--card2); color:var(--ink-soft);
+        border-radius:12px; padding:9px 4px; font-weight:900; font-size:15px;
+      }
+      .place-tab.selected{border-color:var(--teal); background:var(--teal-soft); color:var(--teal-dark);}
+      .gate-list{list-style:none; margin:12px 0 0; padding:12px 14px; background:var(--card2); border:2px solid var(--line); border-radius:14px; display:flex; flex-direction:column; gap:8px;}
+      .gate-list li{display:flex; gap:9px; align-items:flex-start; font-size:14px; line-height:1.45;}
+      .gate-list .mark{width:22px; height:22px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; color:#fff; background:#c9c2ae; margin-top:1px;}
+      .gate-list li.ok .mark{background:var(--green);}
+      .name-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px;}
+      .name-chip{
+        border:2px solid var(--line); background:var(--card2); color:var(--ink);
+        border-radius:999px; padding:7px 13px; font-size:14px; font-weight:700;
+      }
+      .name-chip.selected{border-color:var(--coral); background:var(--coral-soft); color:var(--coral-dark);}
+      .pick-chip{
+        border:3px solid var(--line); background:var(--card2); border-radius:14px; color:var(--ink);
+        padding:10px 4px 8px; display:flex; flex-direction:column; align-items:center; gap:3px;
+        font-weight:700; font-size:14px;
+      }
+      .pick-chip svg{width:40px; height:40px;}
+      .pick-chip.selected{border-color:var(--gold); background:#fdf3d7;}
+      @media (prefers-color-scheme: dark){ .pick-chip.selected{background:#4d3f1e;} }
+      .place-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
+      .place-chip{
+        border:3px solid var(--line); border-radius:14px; padding:9px 2px 7px; color:#fff;
+        display:flex; flex-direction:column; align-items:center; gap:2px; font-weight:900; font-size:12.5px;
+      }
+      .place-chip svg{width:34px; height:34px;}
+      .place-chip.selected{outline:3px solid var(--ink); outline-offset:2px;}
+      .place-chip .ko{font-weight:500; font-size:11px; opacity:.92;}
+      .tool-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+
+      /* ---------- 쓰기 패널 ---------- */
+      .diff-row{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px;}
+      .diff-card{
+        border:3px solid var(--line); background:var(--card2); border-radius:14px; padding:11px 9px;
+        text-align:left; color:var(--ink);
+      }
+      .diff-card .stars{font-size:15px; color:var(--gold); letter-spacing:1px;}
+      .diff-card .dn{font-weight:900; font-size:16px; margin:2px 0;}
+      .diff-card .dr{font-size:12px; color:var(--ink-soft); line-height:1.45;}
+      .diff-card .dh{font-size:12px; font-weight:800; color:var(--teal-dark); line-height:1.45; margin-top:7px; padding-top:7px; border-top:1.5px dashed var(--line);}
+      .diff-card.selected{border-color:var(--teal); background:var(--teal-soft);}
+      .help-note{
+        font-size:13.5px; line-height:1.55; color:var(--teal-dark); font-weight:700;
+        background:var(--teal-soft); border-radius:10px; padding:9px 11px; margin:10px 0 2px;
+      }
+      .word-line{font-size:14.5px; line-height:1.9; color:var(--ink); margin:0 0 4px; word-break:keep-all;}
+      .word-line .sep{color:var(--ink-soft); margin:0 3px;}
+      .word-line .place-name{font-weight:800;}
+      .spell-box{margin-top:12px; border-radius:14px; padding:13px 14px; border:2px solid var(--line); background:var(--card2);}
+      .spell-box.ok{border-color:var(--green); background:var(--green-soft);}
+      .spell-box.warn{border-color:var(--gold); background:#fdf3d7;}
+      @media (prefers-color-scheme: dark){ .spell-box.warn{background:#4d3f1e;} }
+      .spell-box .spell-title{font-weight:900; font-size:15px; margin-bottom:4px;}
+      .spell-box .spell-msg{font-size:13.5px; color:var(--ink-soft); line-height:1.55; margin:0 0 9px;}
+      .spell-box .spell-line{font-size:14px; color:var(--ink); line-height:1.5; margin:0 0 5px; font-weight:700;}
+      .spell-box .spell-line.soft{color:var(--ink-soft); font-weight:500;}
+      .spell-suggests{display:flex; flex-wrap:wrap; gap:7px;}
+      .spell-suggest{
+        display:inline-flex; align-items:center; border:1.5px solid var(--teal); background:var(--card);
+        color:var(--teal-dark); border-radius:999px; padding:7px 12px; font-size:14px; font-weight:800;
+        user-select:text; cursor:text;
+      }
+      .spell-preview{font-size:16px; line-height:1.7; background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; word-break:break-word; white-space:pre-wrap;}
+      .spell-bad{text-decoration:underline wavy var(--red) 2px; text-underline-offset:4px; font-weight:900; color:var(--red);}
+      .frames-label{font-weight:900; font-size:14px; margin:14px 0 8px; color:var(--ink);}
+      .frame-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
+      .frame-line{
+        background:var(--card); border:1.5px solid var(--line); border-radius:10px;
+        padding:8px 11px; font-size:15px; font-weight:700; line-height:1.5; color:var(--ink);
+        user-select:text; cursor:text;
+      }
+      .frame-line.loc{border-color:var(--line);}
+      .frame-line .blank{color:var(--teal-dark); font-weight:900;}
+      .directions-input{
+        width:100%; min-height:118px; resize:vertical; margin-top:14px;
+        font-size:17px; line-height:1.65; padding:13px 14px;
+        border:3px solid var(--line); border-radius:14px; background:var(--card2); color:var(--ink);
+      }
+      .directions-input:focus{outline:none; border-color:var(--teal);}
+      .text-tools{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap;}
+      .checklist{list-style:none; margin:16px 0 0; padding:14px; background:var(--card2); border:2px solid var(--line); border-radius:14px; display:flex; flex-direction:column; gap:9px;}
+      .checklist li{display:flex; gap:9px; align-items:flex-start; font-size:14.5px; line-height:1.45;}
+      .checklist .mark{
+        width:23px; height:23px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+        font-size:13px; font-weight:900; color:#fff; background:#c9c2ae; margin-top:1px;
+      }
+      .checklist li.ok .mark{background:var(--green);}
+      .checklist li.bad .mark{background:var(--red);}
+      .checklist li .hint{display:block; color:var(--ink-soft); font-size:12.5px; white-space:pre-line;}
+      .checklist li.bad .hint{color:var(--red);}
+      .panel-actions{display:flex; gap:9px; margin-top:16px; flex-wrap:wrap;}
+      .panel-actions .btn{flex:1; min-width:130px;}
+
+      .walk-status{
+        margin-top:12px; border-radius:14px; padding:13px 15px; font-size:15px; line-height:1.55;
+        display:none;
+      }
+      .walk-status.show{display:block;}
+      .walk-status.playing{background:var(--teal-soft); color:var(--ink);}
+      .walk-status.success{background:var(--green-soft); border:2px solid var(--green);}
+      .walk-status.fail{background:var(--red-soft); border:2px solid var(--red);}
+
+      /* ---------- 완성 화면 ---------- */
+      .done-wrap{max-width:760px; margin:2vh auto 0;}
+      .done-card{background:var(--card); border:2px solid var(--line); border-radius:24px; box-shadow:var(--shadow); padding:26px;}
+      .done-card h1{margin:0 0 4px; font-size:30px; color:var(--teal-dark); text-align:center;}
+      .done-card .sub{text-align:center; color:var(--ink-soft); margin:0 0 18px; font-size:15px; line-height:1.6;}
+      .done-preview{width:100%; border-radius:14px; border:2px solid var(--line); display:block;}
+      .share-code-box{
+        margin-top:18px; background:var(--card2); border:2px dashed var(--teal); border-radius:14px; padding:14px;
+      }
+      .share-code-box .sc-label{font-weight:900; font-size:15px; margin-bottom:8px;}
+      .share-code-text{
+        width:100%; font-size:12px; word-break:break-all; background:var(--card); color:var(--ink-soft);
+        border:1px solid var(--line); border-radius:10px; padding:10px; min-height:56px;
+        font-family:ui-monospace,Menlo,monospace; resize:none;
+      }
+      .done-actions{display:flex; flex-direction:column; gap:10px; margin-top:18px;}
+      .done-actions .row{display:flex; gap:10px; flex-wrap:wrap;}
+      .done-actions .row .btn{flex:1; min-width:150px;}
+
+      /* ---------- 풀기 화면 ---------- */
+      .play-layout{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:18px; align-items:start;}
+      @media (max-width:920px){ .play-layout{grid-template-columns:1fr;} }
+      .sentence-list{list-style:none; margin:0 0 6px; padding:0; display:flex; flex-direction:column; gap:7px;}
+      .sentence-list li{
+        background:var(--card2); border:2px solid var(--line); border-radius:12px; padding:10px 13px;
+        font-size:16.5px; font-weight:500; display:flex; gap:9px; align-items:flex-start; cursor:pointer; line-height:1.45;
+      }
+      .sentence-list li .sn{font-family:"Jua",sans-serif; color:var(--teal); font-size:15px; flex:none; margin-top:1px;}
+      .sentence-list li.now{border-color:var(--gold); background:#fdf3d7;}
+      @media (prefers-color-scheme: dark){ .sentence-list li.now{background:#4d3f1e;} }
+      .helper-pad{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:12px;}
+      .helper-pad .btn{padding:14px 6px; font-size:16px;}
+      .play-status{margin-top:12px; border-radius:14px; padding:13px 15px; font-size:15px; line-height:1.55; display:none;}
+      .play-status.show{display:block;}
+      .play-status.info{background:var(--teal-soft);}
+      .play-status.success{background:var(--green-soft); border:2px solid var(--green);}
+      .play-status.fail{background:var(--red-soft); border:2px solid var(--red);}
+      .badge{
+        display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:4px 12px;
+        font-size:13px; font-weight:900; background:var(--gold); color:#4a3205;
+      }
+      .badge.teal{background:var(--teal-soft); color:var(--teal-dark);}
+
+      /* ---------- 모달 / 토스트 ---------- */
+      .modal-back{
+        position:fixed; inset:0; background:rgba(30,25,15,.5); z-index:50;
+        display:none; align-items:flex-end; justify-content:center; padding:0;
+      }
+      .modal-back.open{display:flex;}
+      .modal{
+        background:var(--card); width:100%; max-width:560px; max-height:86vh; overflow-y:auto;
+        border-radius:22px 22px 0 0; padding:22px 20px 30px;
+      }
+      @media (min-width:700px){ .modal-back{align-items:center; padding:20px;} .modal{border-radius:22px;} }
+      .modal h3{margin:0 0 6px; font-size:21px; color:var(--teal-dark);}
+      .modal .desc{color:var(--ink-soft); font-size:14px; line-height:1.55; margin:0 0 14px;}
+      .shelf-item{
+        display:flex; align-items:center; gap:11px; border:2px solid var(--line); border-radius:14px;
+        padding:11px 13px; margin-bottom:9px; background:var(--card2);
+      }
+      .shelf-item .avatar{width:38px; height:38px; border-radius:50%; overflow:hidden; flex:none; background:#fff; border:2px solid var(--line);}
+      .shelf-item .meta{flex:1; min-width:0;}
+      .shelf-item .meta .nm{font-weight:900; font-size:15px;}
+      .shelf-item .meta .dt{font-size:12.5px; color:var(--ink-soft);}
+      .shelf-empty{color:var(--ink-soft); font-size:14.5px; text-align:center; padding:18px 0; line-height:1.6;}
+      .picker-list{display:flex; flex-direction:column; gap:8px;}
+      .picker-item{
+        border:2px solid var(--line); background:var(--card2); color:var(--ink); border-radius:12px;
+        padding:12px 15px; font-size:16.5px; font-weight:700; text-align:left;
+        display:flex; align-items:center; gap:10px;
+      }
+      .picker-item svg{width:26px; height:26px; flex:none;}
+      .picker-item .dot{width:14px; height:14px; border-radius:4px; flex:none;}
+      #toast{
+        position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+        background:var(--ink); color:var(--bg); font-weight:700; font-size:15px;
+        padding:12px 22px; border-radius:999px; opacity:0; pointer-events:none;
+        transition:opacity .25s ease, transform .25s ease; z-index:99; max-width:88vw; text-align:center;
+        box-shadow:var(--shadow);
+      }
+      #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+      #confettiCanvas{position:fixed; inset:0; pointer-events:none; z-index:80; display:none;}
+      /* ---------- 번호 고르기 ---------- */
+      .num-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:7px;}
+      .num-chip{
+        border:3px solid var(--line); background:var(--card2); border-radius:11px;
+        padding:9px 2px; font-size:16px; font-weight:900; color:var(--ink);
+      }
+      .num-chip.selected{border-color:var(--teal); background:var(--teal-soft); color:var(--teal-dark);}
+      .num-chip.taken{opacity:.45;}
+      .fb-status{
+        margin-top:16px; border-radius:12px; padding:11px 13px; font-size:13.5px; line-height:1.55;
+        background:var(--card2); border:2px dashed var(--line); color:var(--ink-soft);
+        display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      }
+      .fb-status .dot{width:11px; height:11px; border-radius:50%; background:#c9c2ae; flex:none;}
+      .fb-status.on .dot{background:var(--green);}
+      .fb-status b{color:var(--ink);}
+
+      /* ---------- 교사 대시보드 ---------- */
+      .teacher-wrap{max-width:900px; margin:2vh auto 0;}
+      .teacher-card{background:var(--card); border:2px solid var(--line); border-radius:24px; box-shadow:var(--shadow); padding:24px 24px 28px;}
+      .teacher-card h1{font-size:28px; margin:0 0 4px; color:var(--teal-dark);}
+      .teacher-card .sub{color:var(--ink-soft); font-size:14.5px; margin:0 0 16px; line-height:1.6;}
+      .teacher-summary{display:flex; gap:9px; flex-wrap:wrap; margin:14px 0 16px;}
+      .sum-chip{border-radius:999px; padding:7px 15px; font-weight:900; font-size:14.5px; background:var(--card2); border:2px solid var(--line);}
+      .sum-chip.done{background:var(--green-soft); border-color:var(--green); color:var(--ink);}
+      .sum-chip.making{background:#fdf3d7; border-color:var(--gold); color:var(--ink);}
+      @media (prefers-color-scheme: dark){ .sum-chip.making{background:#4d3f1e;} }
+      .roster-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px;}
+      @media (max-width:560px){ .roster-grid{grid-template-columns:repeat(5,1fr);} }
+      .roster-cell{
+        border:3px solid var(--line); background:var(--card2); border-radius:13px;
+        padding:8px 4px 8px; text-align:center; color:var(--ink); min-height:96px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+      }
+      .roster-main{
+        background:none; border:none; padding:0; color:inherit; width:100%;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+      }
+      .roster-main.clickable{cursor:pointer;}
+      .roster-del{
+        margin-top:6px; border:2px solid var(--red); color:var(--red); background:var(--card);
+        border-radius:999px; padding:3px 12px; font-size:12px; font-weight:900; line-height:1.3;
+      }
+      .roster-del:active{transform:scale(.95);}
+      .roster-del:disabled{opacity:.45; cursor:not-allowed;}
+      .roster-cell .rn{font-family:"Jua",sans-serif; font-size:17px; line-height:1;}
+      .roster-cell .rname{font-size:12.5px; font-weight:700; line-height:1.25; word-break:keep-all;}
+      .roster-cell .rst{font-size:11px; color:var(--ink-soft); font-weight:700;}
+      .roster-cell.st-done{border-color:var(--green); background:var(--green-soft); cursor:pointer;}
+      .roster-cell.st-making{border-color:var(--gold); background:#fdf3d7;}
+      @media (prefers-color-scheme: dark){ .roster-cell.st-making{background:#4d3f1e;} }
+      .roster-cell.st-none{opacity:.62;}
+      .friend-item{
+        display:flex; align-items:center; gap:11px; border:2px solid var(--line); border-radius:14px;
+        padding:11px 13px; margin-bottom:9px; background:var(--card2); width:100%; text-align:left; color:var(--ink);
+      }
+      .friend-item .avatar{width:38px; height:38px; border-radius:50%; overflow:hidden; flex:none; background:#fff; border:2px solid var(--line);}
+      .friend-item .meta{flex:1; min-width:0;}
+      .friend-item .meta .nm{font-weight:900; font-size:15.5px;}
+      .friend-item .meta .dt{font-size:12.5px; color:var(--ink-soft);}
+      .setup-textarea{
+        width:100%; min-height:120px; font-size:12.5px; padding:11px; border:2px solid var(--line);
+        border-radius:12px; background:var(--card2); color:var(--ink);
+        font-family:ui-monospace,Menlo,monospace; resize:vertical;
+      }
+      .submit-box{
+        margin-top:18px; background:var(--green-soft); border:2px dashed var(--green); border-radius:14px; padding:16px;
+        text-align:center;
+      }
+      .submit-box .sb-title{font-weight:900; font-size:17px; margin-bottom:6px;}
+      .submit-box .sb-desc{font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0 0 12px;}
+      .teacher-link{
+        background:none; border:none; color:var(--ink-soft); font-size:12px;
+        text-decoration:underline; opacity:.6; padding:4px 2px;
+      }
+      .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+    </style>
+  </head>
+  <body>
+    <!-- ===== SVG 아이콘 모음 ===== -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-home" viewBox="0 0 48 48">
+          <path d="M6 25L24 8l18 17" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11 23v16a2 2 0 0 0 2 2h22a2 2 0 0 0 2-2V23" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 41V29h8v12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="i-library" viewBox="0 0 48 48">
+          <path d="M8 10c4-2.4 8-2.4 12 .6 4-3 8-3 12-.6v26c-4-2.4-8-2.4-12 .6-4-3-8-3-12-.6z" fill="#fff"/>
+          <path d="M20 10.6v26" stroke="#4e7fb8" stroke-width="2.4"/>
+          <path d="M12 16c2-.8 3.6-.7 5 .2M12 22c2-.8 3.6-.7 5 .2M27 16.2c1.4-.9 3-1 5-.2M27 22.2c1.4-.9 3-1 5-.2" stroke="#4e7fb8" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-school" viewBox="0 0 48 48">
+          <path d="M24 4v7" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 4l11 3.4L24 11z" fill="#ffe9a8"/>
+          <rect x="10" y="17" width="28" height="21" rx="2" fill="#fff"/>
+          <path d="M6 18l18-8 18 8z" fill="#fff"/>
+          <rect x="20" y="27" width="8" height="11" rx="1.5" fill="#e8a13a"/>
+          <rect x="14" y="22" width="5" height="5" rx="1" fill="#e8a13a"/><rect x="29" y="22" width="5" height="5" rx="1" fill="#e8a13a"/>
+        </symbol>
+        <symbol id="i-hospital" viewBox="0 0 48 48">
+          <rect x="9" y="9" width="30" height="30" rx="6" fill="#fff"/>
+          <path d="M20 16h8v6h6v8h-6v6h-8v-6h-6v-8h6z" fill="#d9534f"/>
+        </symbol>
+        <symbol id="i-bank" viewBox="0 0 48 48">
+          <path d="M24 6l17 8H7z" fill="#fff"/>
+          <circle cx="24" cy="11" r="2" fill="#b08a2e"/>
+          <rect x="10" y="18" width="4.6" height="15" fill="#fff"/><rect x="17.7" y="18" width="4.6" height="15" fill="#fff"/>
+          <rect x="25.7" y="18" width="4.6" height="15" fill="#fff"/><rect x="33.4" y="18" width="4.6" height="15" fill="#fff"/>
+          <rect x="7" y="35" width="34" height="4" rx="1.5" fill="#fff"/><rect x="7" y="15.4" width="34" height="3" rx="1.5" fill="#fff"/>
+        </symbol>
+        <symbol id="i-museum" viewBox="0 0 48 48">
+          <path d="M10 16a14 10 0 0 1 28 0z" fill="#fff"/>
+          <rect x="11" y="19" width="4.4" height="14" fill="#fff"/><rect x="18" y="19" width="4.4" height="14" fill="#fff"/>
+          <rect x="25.6" y="19" width="4.4" height="14" fill="#fff"/><rect x="32.6" y="19" width="4.4" height="14" fill="#fff"/>
+          <rect x="8" y="35" width="32" height="4" rx="1.5" fill="#fff"/><rect x="8" y="16.6" width="32" height="3" rx="1.5" fill="#fff"/>
+          <path d="M17 27c2.4-3.4 4-3.4 7 0 3-3.4 4.6-3.4 7 0" stroke="#96684a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-restaurant" viewBox="0 0 48 48">
+          <path d="M14 7v13M10 7v6a4 4 0 0 0 8 0V7M14 20v21" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+          <path d="M33 7c-3.4 3.4-4.4 8.4-3 13l3 2v19" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="i-bakery" viewBox="0 0 48 48">
+          <path d="M8 29a10 9 0 0 1 4-7.8A13 11 0 0 1 24 16a13 11 0 0 1 12 5.2A10 9 0 0 1 40 29v3a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="#fff"/>
+          <path d="M16 24l3.4 3M24 22.4l3.4 3M32 24l3.4 3" stroke="#c98d45" stroke-width="2.6" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-park" viewBox="0 0 48 48">
+          <circle cx="19" cy="17" r="9" fill="#fff"/>
+          <circle cx="30" cy="13" r="6.5" fill="#dff2d8"/>
+          <path d="M19 24v13M30 18v9" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+          <path d="M8 41h32" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-bookstore" viewBox="0 0 48 48">
+          <rect x="10" y="12" width="17" height="27" rx="2.5" fill="#fff" transform="rotate(-7 18 25)"/>
+          <rect x="23" y="10" width="17" height="29" rx="2.5" fill="#dff0ee"/>
+          <path d="M29 16h6M29 22h6M29 28h6" stroke="#3e8e8a" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M31.5 10v7l3-2.2 3 2.2v-7" fill="#e2703a"/>
+        </symbol>
+        <symbol id="i-postoffice" viewBox="0 0 48 48">
+          <rect x="7" y="13" width="34" height="23" rx="3" fill="#fff"/>
+          <path d="M8.5 15.5L24 27l15.5-11.5" stroke="#d96c85" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M8.5 34L19 24M39.5 34L29 24" stroke="#d96c85" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".65"/>
+        </symbol>
+        <symbol id="i-crown" viewBox="0 0 48 48">
+          <path d="M8 33l-2.4-17L16 24l8-13 8 13 10.4-8L40 33z" fill="#ffd94d"/>
+          <rect x="8" y="33" width="32" height="5.4" rx="2.4" fill="#f0a832"/>
+          <circle cx="24" cy="27" r="3" fill="#e2703a"/><circle cx="13.5" cy="29.5" r="2.2" fill="#44828c"/><circle cx="34.5" cy="29.5" r="2.2" fill="#44828c"/>
+        </symbol>
+        <symbol id="i-soccer" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="17" fill="#fff" stroke="#2f3542" stroke-width="2.4"/>
+          <path d="M24 16l6.2 4.5-2.4 7.3h-7.6l-2.4-7.3z" fill="#2f3542"/>
+          <path d="M24 16V8.5M30.2 20.5l7-2.3M27.8 27.8l4.4 6M20.2 27.8l-4.4 6M17.8 20.5l-7-2.3" stroke="#2f3542" stroke-width="2" fill="none"/>
+          <path d="M10.8 18.2a17 17 0 0 1 4.5-6.4l2.5 5.4-3.5 3.4zM37.2 18.2a17 17 0 0 0-4.5-6.4l-2.5 5.4 3.5 3.4zM15.8 33.8a17 17 0 0 0 6 5.2l1-5.8-3.8-2.7zM32.2 33.8a17 17 0 0 1-6 5.2l-1-5.8 3.8-2.7z" fill="#2f3542" opacity=".85"/>
+        </symbol>
+        <symbol id="i-trophy" viewBox="0 0 48 48">
+          <path d="M14 7h20v9a10 10 0 0 1-20 0z" fill="#ffd94d"/>
+          <path d="M14 10H7.5a6.5 6.5 0 0 0 6.9 8.4M34 10h6.5a6.5 6.5 0 0 1-6.9 8.4" stroke="#f0a832" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+          <path d="M24 25.6V32" stroke="#f0a832" stroke-width="4" stroke-linecap="round"/>
+          <path d="M16 40h16M18.5 32h11l2 8h-15z" fill="#f0a832"/>
+          <path d="M19.5 11.5l2 3.4 3.8.5-2.8 2.6.7 3.8-3.2-1.8-3.2 1.8.7-3.8-2.8-2.6 3.8-.5z" fill="#fff3c4"/>
+        </symbol>
+        <symbol id="i-robot" viewBox="0 0 48 48">
+          <path d="M24 5v6" stroke="#7f8c9b" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="24" cy="5" r="3" fill="#ff5d8f"/>
+          <rect x="9" y="12" width="30" height="24" rx="6" fill="#9fb6c9"/>
+          <rect x="13" y="16" width="22" height="13" rx="4" fill="#eaf6ff"/>
+          <circle cx="19" cy="22.5" r="2.6" fill="#1e4fa3"/><circle cx="29" cy="22.5" r="2.6" fill="#1e4fa3"/>
+          <path d="M19 33h10" stroke="#5d6d8c" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M5 20v8M43 20v8" stroke="#7f8c9b" stroke-width="4" stroke-linecap="round"/>
+          <path d="M15 40h18" stroke="#7f8c9b" stroke-width="3.4" stroke-linecap="round"/>
+          <circle cx="34.5" cy="18.5" r="1.6" fill="#ffd94d"/>
+        </symbol>
+        <symbol id="i-gamepad" viewBox="0 0 48 48">
+          <path d="M11 14h26a9 9 0 0 1 8.6 12.2l-1.7 6.4a5 5 0 0 1-8.2 2.4L31 30H17l-4.7 5a5 5 0 0 1-8.2-2.4l-1.7-6.4A9 9 0 0 1 11 14z" fill="#4a5570"/>
+          <path d="M15 20v10M10 25h10" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+          <circle cx="33" cy="21.5" r="2.5" fill="#ff5d8f"/><circle cx="38" cy="27" r="2.5" fill="#ffd94d"/>
+          <circle cx="28" cy="27.5" r="2" fill="#7ed3e8"/>
+        </symbol>
+        <symbol id="i-fossil" viewBox="0 0 48 48">
+          <path d="M6 32c-1-9 4-19 13-22 10-4 21 2 23 12 1 8-3 16-11 19-9 4-23 1-25-9z" fill="#b9a68e"/>
+          <path d="M12 34c4 1 7-1 9-4l8-11c1-2 4-2 5 0l1 4c3-1 5 1 4 4l-3 8c-1 3-4 4-7 3l-6-2c-4 2-8 1-11-2z" fill="#f4ead2"/>
+          <circle cx="31" cy="22" r="1.8" fill="#8a7a5f"/><circle cx="17" cy="31" r="1.5" fill="#8a7a5f"/><circle cx="26" cy="31" r="1.4" fill="#8a7a5f"/>
+          <path d="M14 18c2-3 6-5 10-5" stroke="#8a7a5f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".7"/>
+        </symbol>
+        <symbol id="i-gem" viewBox="0 0 48 48">
+          <path d="M14 10h20l8 10-18 19L6 20z" fill="#7ed3e8"/>
+          <path d="M6 20h36M14 10l7 10 3-10 3 10 7-10M21 20l3 19 3-19" stroke="#eafaff" stroke-width="2" fill="none" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="i-chest" viewBox="0 0 48 48">
+          <path d="M8 24a16 11 0 0 1 32 0z" fill="#b5762f"/>
+          <rect x="8" y="24" width="32" height="14" rx="3" fill="#96600f"/>
+          <path d="M8 29h32" stroke="#7a4d08" stroke-width="2.4"/>
+          <rect x="20.4" y="21" width="7.2" height="10" rx="2" fill="#ffd94d"/>
+          <circle cx="24" cy="26" r="1.8" fill="#96600f"/>
+        </symbol>
+        <symbol id="i-cinema" viewBox="0 0 48 48">
+          <rect x="8" y="14" width="32" height="26" rx="3" fill="#fff"/>
+          <path d="M8 14l4-7 30 5-1.4 6.4L9.6 15z" fill="#fff"/>
+          <path d="M15 8.4l3.4 5.4M24 10l3.4 5.4M33 11.6l3.4 5.4" stroke="#7a5fb0" stroke-width="2.6"/>
+          <path d="M15 24l18 9M33 24L15 33" stroke="#7a5fb0" stroke-width="3" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-cafe" viewBox="0 0 48 48">
+          <path d="M10 18h24v9a10 10 0 0 1-10 10h-4A10 10 0 0 1 10 27z" fill="#fff"/>
+          <path d="M34 20h2.4a5.4 5.4 0 0 1 0 10.8H34" stroke="#fff" stroke-width="3.4" fill="none"/>
+          <path d="M17 12c0-2.4 2.4-2.4 2.4-4.8M25 12c0-2.4 2.4-2.4 2.4-4.8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path d="M8 42h30" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-zoo" viewBox="0 0 48 48">
+          <ellipse cx="24" cy="30" rx="9" ry="7.6" fill="#fff"/>
+          <circle cx="11.6" cy="20" r="3.6" fill="#fff"/><circle cx="19" cy="14.6" r="3.8" fill="#fff"/>
+          <circle cx="29" cy="14.6" r="3.8" fill="#fff"/><circle cx="36.4" cy="20" r="3.6" fill="#fff"/>
+        </symbol>
+        <symbol id="i-tree" viewBox="0 0 48 48">
+          <circle cx="24" cy="16" r="10.5" fill="#fff"/>
+          <circle cx="15" cy="22" r="7" fill="#dff2d8"/><circle cx="33" cy="22" r="7" fill="#dff2d8"/>
+          <path d="M24 24v15" stroke="#fff" stroke-width="4.6" stroke-linecap="round"/>
+          <path d="M14 41h20" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-flower" viewBox="0 0 48 48">
+          <circle cx="24" cy="11" r="6" fill="#fff"/><circle cx="33.4" cy="17.6" r="6" fill="#fff"/>
+          <circle cx="30.8" cy="28.4" r="6" fill="#fff"/><circle cx="17.2" cy="28.4" r="6" fill="#fff"/>
+          <circle cx="14.6" cy="17.6" r="6" fill="#fff"/>
+          <circle cx="24" cy="20.4" r="4.6" fill="#ffd94d"/>
+          <path d="M24 34v7M24 38c-3-1-5-3-5.4-5.8M24 38c3-1 5-3 5.4-5.8" stroke="#fff" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-lake" viewBox="0 0 48 48">
+          <path d="M6 17c4-3.4 8-3.4 12 0s8 3.4 12 0 8-3.4 12 0M6 27c4-3.4 8-3.4 12 0s8 3.4 12 0 8-3.4 12 0M6 37c4-3.4 8-3.4 12 0s8 3.4 12 0 8-3.4 12 0" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+          <circle cx="36" cy="9" r="4" fill="#ffe9a8"/>
+        </symbol>
+        <symbol id="i-mountain" viewBox="0 0 48 48">
+          <path d="M4 40L19 14l8.6 12L33 19l11 21z" fill="#fff"/>
+          <path d="M19 14l4.6 6.4-4.6 2.4-4.4-2.6z" fill="#cfe0ee"/>
+          <path d="M33 19l3.8 5-3.8 2-3.6-2.2z" fill="#cfe0ee"/>
+        </symbol>
+        <symbol id="i-rock" viewBox="0 0 48 48">
+          <path d="M8 38l4-14 12-8 13 6 4 16z" fill="#fff"/>
+          <path d="M12 24l10 4 13-6M22 28l2 10" stroke="#9a958c" stroke-width="2.4" fill="none"/>
+        </symbol>
+        <symbol id="i-crosswalk" viewBox="0 0 48 48">
+          <path d="M14 6h6l-1.6 9h-6.4zM28 6h6l1.6 9h-6.4zM15 20h5l-.8 8h-5zM28 20h5l.8 8h-5zM16 33h4.4l-.6 9h-4.6zM27.6 33H32l.6 9h-4.6z" fill="#fff"/>
+        </symbol>
+        <symbol id="i-trafficlight" viewBox="0 0 48 48">
+          <rect x="16" y="5" width="16" height="38" rx="6" fill="#fff"/>
+          <circle cx="24" cy="13.4" r="4.2" fill="#d9534f"/>
+          <circle cx="24" cy="24" r="4.2" fill="#e9a13b"/>
+          <circle cx="24" cy="34.6" r="4.2" fill="#43a35f"/>
+        </symbol>
+        <symbol id="i-fountain" viewBox="0 0 48 48">
+          <path d="M24 6v8M24 10c-5-2-9 1-10 6M24 10c5-2 9 1 10 6M24 16c-7-1-11 3-12 8M24 16c7-1 11 3 12 8" stroke="#fff" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+          <path d="M8 32h32l-3.4 8H11.4z" fill="#fff"/>
+          <path d="M24 24v8" stroke="#fff" stroke-width="3.4"/>
+        </symbol>
+        <symbol id="i-bridge" viewBox="0 0 48 48">
+          <path d="M5 34c10-11 28-11 38 0" stroke="#fff" stroke-width="4" fill="none"/>
+          <path d="M5 34h38M10 29v11M19 25.4V40M29 25.4V40M38 29v11" stroke="#fff" stroke-width="3"/>
+          <path d="M5 42h38" stroke="#bfe0f2" stroke-width="3" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-busstop" viewBox="0 0 48 48">
+          <path d="M13 6v36" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+          <rect x="13" y="6" width="28" height="17" rx="3" fill="#fff"/>
+          <rect x="17.6" y="10.4" width="8" height="6" rx="1" fill="#d9a03a"/><rect x="27.6" y="10.4" width="8" height="6" rx="1" fill="#d9a03a"/>
+          <circle cx="21" cy="20" r="1.8" fill="#d9a03a"/><circle cx="32" cy="20" r="1.8" fill="#d9a03a"/>
+        </symbol>
+        <symbol id="i-hat" viewBox="0 0 48 48">
+          <path d="M12 28a12 10 0 0 1 24 0z" fill="#ffd94d"/>
+          <path d="M6 28h36a3 3 0 0 1-3 5H9a3 3 0 0 1-3-5z" fill="#ff5d8f"/>
+          <path d="M12 25h24" stroke="#f0a832" stroke-width="3"/>
+        </symbol>
+        <symbol id="i-coin" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="16" fill="#ffd94d"/>
+          <circle cx="24" cy="24" r="11.6" fill="none" stroke="#f0a832" stroke-width="2.6"/>
+          <path d="M24 17l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#f0a832"/>
+        </symbol>
+        <symbol id="i-shell" viewBox="0 0 48 48">
+          <path d="M24 42L9 24a15 15 0 0 1 30 0z" fill="#ffd9e4"/>
+          <path d="M24 42L24 12M24 42L14.6 16M24 42l9.4-26M24 42L8.6 27M24 42l15.4-15" stroke="#e2709e" stroke-width="2.2"/>
+          <path d="M12 30a17 17 0 0 0 24 0" stroke="#e2709e" stroke-width="2.2" fill="none"/>
+        </symbol>
+        <symbol id="i-bear" viewBox="0 0 48 48">
+          <circle cx="12" cy="12" r="6.4" fill="#b07a45"/><circle cx="36" cy="12" r="6.4" fill="#b07a45"/>
+          <circle cx="12" cy="12" r="3" fill="#e5c39a"/><circle cx="36" cy="12" r="3" fill="#e5c39a"/>
+          <circle cx="24" cy="25" r="16.5" fill="#c08b52"/>
+          <ellipse cx="24" cy="30.5" rx="7.6" ry="5.8" fill="#ecd3ac"/>
+          <circle cx="17.6" cy="21.6" r="2.2" fill="#33241a"/><circle cx="30.4" cy="21.6" r="2.2" fill="#33241a"/>
+          <ellipse cx="24" cy="28.4" rx="2.9" ry="2.1" fill="#33241a"/>
+          <path d="M24 30.4v2.4M24 32.8c-1.4 1.4-3.4 1.6-5 .6M24 32.8c1.4 1.4 3.4 1.6 5 .6" stroke="#33241a" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-rabbit" viewBox="0 0 48 48">
+          <ellipse cx="16.6" cy="11" rx="4.6" ry="9.5" fill="#f2f2f5" transform="rotate(-9 16.6 11)"/>
+          <ellipse cx="31.4" cy="11" rx="4.6" ry="9.5" fill="#f2f2f5" transform="rotate(9 31.4 11)"/>
+          <ellipse cx="16.6" cy="12" rx="2.1" ry="5.8" fill="#f6b8c8" transform="rotate(-9 16.6 12)"/>
+          <ellipse cx="31.4" cy="12" rx="2.1" ry="5.8" fill="#f6b8c8" transform="rotate(9 31.4 12)"/>
+          <circle cx="24" cy="29" r="14.6" fill="#f7f7fa"/>
+          <circle cx="18.6" cy="26.6" r="2.1" fill="#333"/><circle cx="29.4" cy="26.6" r="2.1" fill="#333"/>
+          <ellipse cx="24" cy="31.6" rx="2.3" ry="1.6" fill="#f28bab"/>
+          <path d="M24 33.2v1.8M24 35c-1.2 1.2-2.9 1.3-4.2.5M24 35c1.2 1.2 2.9 1.3 4.2.5" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="13.8" cy="31" r="2.4" fill="#f9ccd9"/><circle cx="34.2" cy="31" r="2.4" fill="#f9ccd9"/>
+        </symbol>
+        <symbol id="i-cat" viewBox="0 0 48 48">
+          <path d="M11 20L9 7l12 6.4zM37 20l2-13-12 6.4z" fill="#f2a541"/>
+          <path d="M12.6 16.4L11.4 10l6.4 3.6zM35.4 16.4l1.2-6.4-6.4 3.6z" fill="#f8cd8a"/>
+          <circle cx="24" cy="27" r="15.6" fill="#f7b955"/>
+          <circle cx="18" cy="25" r="2.1" fill="#33302a"/><circle cx="30" cy="25" r="2.1" fill="#33302a"/>
+          <ellipse cx="24" cy="30.6" rx="2.2" ry="1.5" fill="#e2703a"/>
+          <path d="M24 32v1.7M24 33.7c-1.2 1.2-2.8 1.3-4 .5M24 33.7c1.2 1.2 2.8 1.3 4 .5M7 28.6l6.4 1.4M7.8 34l6-1M41 28.6l-6.4 1.4M40.2 34l-6-1" stroke="#33302a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-penguin" viewBox="0 0 48 48">
+          <ellipse cx="24" cy="25" rx="15.5" ry="17.5" fill="#3c4b5c"/>
+          <ellipse cx="24" cy="30" rx="9.6" ry="11.6" fill="#fff"/>
+          <circle cx="18.4" cy="19.6" r="2.2" fill="#fff"/><circle cx="29.6" cy="19.6" r="2.2" fill="#fff"/>
+          <circle cx="18.8" cy="20" r="1.1" fill="#222"/><circle cx="29.2" cy="20" r="1.1" fill="#222"/>
+          <path d="M20.4 24h7.2l-3.6 4z" fill="#f2a541"/>
+          <path d="M14 40.6c2.6 1.6 5.6 1.7 7.6.4M34 40.6c-2.6 1.6-5.6 1.7-7.6.4" stroke="#f2a541" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ================= 입장 화면 ================= -->
+    <section class="screen active" id="screen-entry">
+      <div class="entry-wrap">
+        <div class="entry-card">
+          <h1 class="font-display">나만의 보물지도 만들기</h1>
+          <p class="sub">내 마을 지도에 보물을 숨기고, 영어로 길 안내문을 써서<br />반 친구들과 나누는 보물찾기 퀘스트를 만들어요.</p>
+
+          <div class="field-label"><span class="step-no">1</span> 우리 반을 골라요</div>
+          <div class="class-chips" id="classChips"></div>
+
+          <div class="field-label"><span class="step-no">2</span> 내 번호를 골라요</div>
+          <div class="num-grid" id="numGrid"></div>
+
+          <div class="field-label"><span class="step-no">3</span> 내 이름을 써요</div>
+          <input class="name-input" id="nameInput" type="text" maxlength="12" placeholder="이름을 입력하세요" autocomplete="off" />
+
+          <div class="field-label"><span class="step-no">4</span> 내 캐릭터를 골라요</div>
+          <div class="char-row" id="charRow"></div>
+
+          <div class="entry-actions">
+            <button class="btn coral big font-display" id="startBtn">지도 만들러 가기</button>
+            <p class="sub" style="margin:2px 0 0; font-size:13px;">만들다 중간에 나가도 괜찮아요. 같은 반·번호·이름으로 다시 들어오면 만들던 곳부터 이어서 만들 수 있어요.</p>
+          </div>
+
+          <div style="text-align:right; margin-top:16px;">
+            <button class="teacher-link" id="teacherBtn" type="button">선생님 전용</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 만들기 화면 ================= -->
+    <section class="screen" id="screen-make">
+      <div class="topbar">
+        <button class="home-btn" id="homeBtnMake" type="button"><svg aria-hidden="true"><use href="#i-home"></use></svg>첫 화면으로</button>
+        <span class="title font-display">보물지도 만들기</span>
+        <div class="who">
+          <span class="avatar" id="whoAvatar"></span>
+          <span id="whoText">5-1 홍길동</span>
+          <button class="btn small ghost" id="editWhoBtn" style="padding:5px 10px; font-size:13px;">바꾸기</button>
+        </div>
+        <span id="draftStatus" style="font-size:12.5px; font-weight:700; color:var(--ink-soft);"></span>
+        <div class="spacer"></div>
+        <button class="btn coral" id="friendListBtn" style="padding:11px 18px; font-size:15.5px;">친구들의 보물 찾으러 가기</button>
+        <button class="icon-btn wide" id="shelfBtn">내 지도함</button>
+      </div>
+
+      <div class="stepbar" id="stepbar"></div>
+
+      <div class="make-layout">
+        <div class="map-card">
+          <div class="map-head">
+            <span class="map-title font-display" id="mapTitle">내 마을 지도</span>
+            <span class="badge teal" id="mapMeta">5-1 · 홍길동</span>
+            <div class="compass">
+              <span id="compassText">바라보는 방향: 위쪽</span>
+              <div class="rose"><span class="nlab">N</span><div class="needle" id="compassNeedle"></div></div>
+            </div>
+          </div>
+          <div class="grid-wrap" id="makeGridWrap">
+            <div class="grid" id="makeGrid"></div>
+            <div class="walker" id="makeWalker"><div class="walker-inner"><span id="makeWalkerIcon"></span><span class="dir-arrow" id="makeWalkerArrow"></span></div></div>
+          </div>
+          <p class="map-hint" id="makeMapHint"></p>
+          <div class="walk-status" id="walkStatus"></div>
+          <div id="makerHelper" style="display:none; margin-top:14px; border-top:2px dashed var(--line); padding-top:12px;">
+            <div class="frames-label" style="margin:0 0 8px;">방향 도우미 (캐릭터를 직접 움직여 보기)</div>
+            <div class="helper-pad" style="margin-top:0;">
+              <button class="btn ghost" id="mhLeft" type="button">왼쪽으로 돌기</button>
+              <button class="btn" id="mhFwd" type="button">앞으로 한 칸</button>
+              <button class="btn ghost" id="mhRight" type="button">오른쪽으로 돌기</button>
+            </div>
+            <div style="margin-top:9px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn small ghost" id="mhReset" type="button">처음부터</button>
+              <span id="mhAround" style="font-size:13.5px; color:var(--ink-soft); font-weight:700;"></span>
+            </div>
+            <ol class="sentence-list" id="walkSentences" style="margin-top:12px;"></ol>
+          </div>
+        </div>
+
+        <div class="panel" id="sidePanel"></div>
+      </div>
+    </section>
+
+    <!-- ================= 완성 화면 ================= -->
+    <section class="screen" id="screen-done">
+      <div class="done-wrap">
+        <div style="display:flex; margin-bottom:12px;">
+          <button class="home-btn" id="homeBtnDone" type="button"><svg aria-hidden="true"><use href="#i-home"></use></svg>첫 화면으로</button>
+        </div>
+        <div class="done-card">
+          <h1 class="font-display">퀘스트 완성!</h1>
+          <p class="sub" id="doneSub">이제 제출 버튼을 누르면 내 지도가 우리 반 제출함에 올라가요.<br />친구들은 앱 안에서 내 이름을 눌러 바로 지도를 열 수 있어요.</p>
+          <div class="submit-box" id="submitBox">
+            <div class="sb-title" id="submitTitle">아직 제출하지 않았어요</div>
+            <p class="sb-desc" id="submitDesc">제출하면 선생님 화면에서 제출한 것을 확인할 수 있고,<br />우리 반 친구들이 내 지도를 열 수 있어요.</p>
+            <button class="btn coral big font-display" id="submitBtn" style="width:100%;">제출하기</button>
+          </div>
+          <div class="done-actions">
+            <div class="row">
+              <button class="btn ghost" id="backToEditBtn">지도로 돌아가기</button>
+              <button class="btn ghost" id="sameMapNewTextBtn">같은 지도로 하나 더 만들기</button>
+            </div>
+            <div class="row">
+              <button class="btn" id="doneFriendBtn" style="flex:1;">친구들의 보물 찾으러 가기</button>
+            </div>
+            <div class="row">
+              <button class="btn coral big font-display" id="newMapBtn" style="flex:1;">새 지도 만들기</button>
+            </div>
+            <div class="row">
+              <button class="btn ghost" id="doneShelfBtn">내 지도함 보기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 풀기 화면 ================= -->
+    <section class="screen" id="screen-play">
+      <div class="topbar">
+        <button class="home-btn" id="homeBtnPlay" type="button"><svg aria-hidden="true"><use href="#i-home"></use></svg>첫 화면으로</button>
+        <button class="icon-btn wide" id="playBackBtn">← 나가기</button>
+        <span class="title font-display">친구의 보물지도</span>
+        <div class="who">
+          <span class="avatar" id="playWhoAvatar"></span>
+          <span id="playWhoText">5-1 홍길동 친구의 지도</span>
+        </div>
+        <span class="badge" id="playDiffBadge">보통</span>
+      </div>
+
+      <div class="play-layout">
+        <div class="map-card">
+          <div class="map-head">
+            <span class="map-title font-display">보물이 숨은 마을</span>
+            <div class="compass">
+              <span id="playCompassText">바라보는 방향: 위쪽</span>
+              <div class="rose"><span class="nlab">N</span><div class="needle" id="playCompassNeedle"></div></div>
+            </div>
+          </div>
+          <div class="grid-wrap" id="playGridWrap">
+            <div class="grid" id="playGrid"></div>
+            <div class="walker" id="playWalker"><div class="walker-inner"><span id="playWalkerIcon"></span><span class="dir-arrow" id="playWalkerArrow"></span></div></div>
+          </div>
+          <p class="map-hint" id="playMapHint">안내문을 읽고 방향 도우미로 캐릭터를 움직여 보세요. 보물이 있을 칸에 서면 땅 파기를 눌러요.</p>
+        </div>
+
+        <div class="panel">
+          <h2 class="font-display">길 안내문</h2>
+          <p class="desc">친구가 쓴 안내문을 한 문장씩 읽고, 방향 도우미로 캐릭터를 직접 움직여 보물까지 걸어가요.</p>
+          <ol class="sentence-list" id="playSentences"></ol>
+
+          <div class="frames-label">방향 도우미 (내 캐릭터 움직이기)</div>
+          <div class="helper-pad">
+            <button class="btn ghost" id="helperLeft">왼쪽으로 돌기</button>
+            <button class="btn" id="helperFwd">앞으로 한 칸</button>
+            <button class="btn ghost" id="helperRight">오른쪽으로 돌기</button>
+          </div>
+          <div style="margin-top:9px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn small ghost" id="helperReset">처음부터 (출발점으로)</button>
+          </div>
+          <button class="btn coral big font-display" id="digBtn" style="width:100%; margin-top:14px;">땅 파기</button>
+          <p class="desc" style="margin:8px 0 0; font-size:13px;">캐릭터가 서 있는 칸을 파 봐요. 보물이 있으면 나타나요.</p>
+
+          <div class="play-status" id="playStatus"></div>
+
+          <div class="panel-actions" id="playFoundActions" style="display:none;">
+            <button class="btn coral" id="playMakeMineBtn">나도 지도 만들러 가기</button>
+            <button class="btn ghost" id="playAnotherBtn">다른 친구 지도 열기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 모달들 ================= -->
+    <div class="modal-back" id="shelfModal">
+      <div class="modal">
+        <h3 class="font-display">내 지도함</h3>
+        <p class="desc">내가 만든 지도가 여기에 모여요. 제출한 지도는 우리 반 친구들이 친구 지도 목록에서 열 수 있어요.</p>
+        <div id="shelfList"></div>
+        <button class="btn ghost" id="shelfCloseBtn" style="width:100%; margin-top:16px;">닫기</button>
+      </div>
+    </div>
+
+    <div class="modal-back" id="pickerModal">
+      <div class="modal">
+        <h3 class="font-display" id="pickerTitle">고르기</h3>
+        <p class="desc" id="pickerDesc"></p>
+        <div class="picker-list" id="pickerList"></div>
+        <button class="btn ghost" id="pickerCloseBtn" style="width:100%; margin-top:16px;">취소</button>
+      </div>
+    </div>
+
+    <div class="modal-back" id="whoModal">
+      <div class="modal">
+        <h3 class="font-display">반·번호·이름 바꾸기</h3>
+        <p class="desc">바꾼 반, 번호, 이름은 지금 만드는 지도에 적혀요.</p>
+        <div class="field-label" style="margin-top:4px;">우리 반</div>
+        <div class="class-chips" id="whoClassChips"></div>
+        <div class="field-label">내 번호</div>
+        <div class="num-grid" id="whoNumGrid"></div>
+        <div class="field-label">내 이름</div>
+        <input class="name-input" id="whoNameInput" type="text" maxlength="12" autocomplete="off" />
+        <div class="field-label">내 캐릭터</div>
+        <div class="char-row" id="whoCharRow"></div>
+        <button class="btn coral" id="whoSaveBtn" style="width:100%; margin-top:20px;">바꾸기</button>
+        <button class="btn ghost" id="whoCloseBtn" style="width:100%; margin-top:9px;">닫기</button>
+      </div>
+    </div>
+
+    <!-- ================= 선생님 화면 ================= -->
+    <section class="screen" id="screen-teacher">
+      <div class="teacher-wrap">
+        <div class="teacher-card">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 class="font-display">선생님 화면 · 제출 확인</h1>
+            <div class="spacer" style="flex:1;"></div>
+            <button class="btn small ghost" id="teacherBackBtn">← 입장 화면으로</button>
+          </div>
+          <p class="sub">반을 고르면 번호별로 제출 현황이 보여요. <b>제출 완료</b> 학생의 칸을 누르면 그 학생이 낸 지도를 열어 볼 수 있어요. 지도를 여러 개 낸 학생은 칸을 누르면 지도 목록이 떠서 골라 볼 수 있어요. 칸 아래 <b>지우기</b> 버튼을 누르면 그 학생의 제출 지도(여러 개면 모두)와 만드는 중 기록(이어서 하기 저장본 포함)을 지울 수 있어요.</p>
+          <div class="fb-status" id="fbStatus" style="margin:0 0 16px;">
+            <span class="dot"></span>
+            <span style="flex:1; min-width:200px;" id="fbStatusText">제출함 서버를 확인하고 있어요…</span>
+            <button class="btn small ghost" id="fbSetupBtn" type="button">서버 연결 설정</button>
+          </div>
+          <div class="class-chips" id="teacherClassChips"></div>
+          <div class="teacher-summary" id="teacherSummary"></div>
+          <div class="roster-grid" id="rosterGrid"></div>
+          <p class="desc" id="teacherNote" style="color:var(--ink-soft); font-size:13.5px; line-height:1.6; margin:16px 0 0;"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 친구 지도 모달 ================= -->
+    <div class="modal-back" id="friendModal">
+      <div class="modal">
+        <h3 class="font-display">친구들의 보물 찾으러 가기</h3>
+        <p class="desc" id="friendModalDesc">우리 반 친구들이 제출한 보물지도예요. 친구 이름을 누르면 그 친구가 만든 지도 목록이 뜨고, 그중 하나를 골라 열 수 있어요. 지도를 여러 개 만든 친구는 목록에서 원하는 지도를 고르면 돼요.</p>
+        <div id="friendList"></div>
+        <button class="btn ghost" id="friendCloseBtn" style="width:100%; margin-top:16px;">닫기</button>
+      </div>
+    </div>
+
+    <!-- ================= 서버 연결 설정 모달 ================= -->
+    <div class="modal-back" id="fbModal">
+      <div class="modal">
+        <h3 class="font-display">제출함 서버 연결 (Firebase)</h3>
+        <p class="desc">우리 반 Firebase 프로젝트(treasure-map-grade5) 설정값이 이미 앱에 들어 있어서, 학생 기기에서는 따로 설정할 필요 없이 자동으로 제출함에 연결돼요.<br />다른 프로젝트로 바꾸고 싶을 때만, Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹)에서 <b>firebaseConfig</b>를 복사해 아래에 붙여 넣으세요. (Realtime Database를 먼저 만들어 두어야 해요.)</p>
+        <textarea class="setup-textarea" id="fbConfigInput" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  databaseURL: "https://...",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
+        <p class="desc" id="fbSetupMsg" style="margin-top:10px;"></p>
+        <button class="btn coral" id="fbConnectBtn" style="width:100%;">연결하기</button>
+        <button class="btn ghost" id="fbCloseBtn" style="width:100%; margin-top:9px;">닫기</button>
+      </div>
+    </div>
+
+    <!-- ================= 확인 모달 ================= -->
+    <div class="modal-back" id="confirmModal">
+      <div class="modal">
+        <h3 class="font-display" id="confirmTitle">확인해 주세요</h3>
+        <p class="desc" id="confirmText"></p>
+        <button class="btn coral" id="confirmYesBtn" style="width:100%;">네, 맞아요</button>
+        <button class="btn ghost" id="confirmNoBtn" style="width:100%; margin-top:9px;">아니요, 다시 고를게요</button>
+      </div>
+    </div>
+
+    <!-- ================= 이어서 하기 모달 ================= -->
+    <div class="modal-back" id="resumeModal">
+      <div class="modal">
+        <h3 class="font-display">만들던 지도가 있어요!</h3>
+        <p class="desc" id="resumeText"></p>
+        <button class="btn coral" id="resumeContinueBtn" style="width:100%;">이어서 하기</button>
+        <button class="btn ghost" id="resumeNewBtn" style="width:100%; margin-top:9px;">새로 만들기</button>
+      </div>
+    </div>
+
+    <!-- ================= 선생님 비밀번호 모달 ================= -->
+    <div class="modal-back" id="pinModal">
+      <div class="modal">
+        <h3 class="font-display" id="pinTitle">선생님 확인</h3>
+        <p class="desc" id="pinDesc">선생님만 아는 비밀번호 4자리를 눌러 주세요.</p>
+        <input class="name-input" id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="비밀번호 4자리" autocomplete="off" style="text-align:center; letter-spacing:.5em;" />
+        <p class="desc" id="pinMsg" style="margin-top:10px; color:var(--red); min-height:20px;"></p>
+        <button class="btn coral" id="pinOkBtn" style="width:100%;">확인</button>
+        <button class="btn ghost" id="pinCloseBtn" style="width:100%; margin-top:9px;">닫기</button>
+      </div>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+    <div id="toast" role="status"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script>
+    'use strict';
+    /* ============================================================
+       나만의 보물지도 만들기
+       - 7x7 마을 지도에 보물을 숨기고 영어 길 안내문을 쓴다.
+       - 안내문 해석기: Go straight (n blocks) / Turn left·right /
+         It's on your left·right / next to the ___.
+         'Turn ~ at the ___' 문형은 쓰지 않는다: 해석기가 읽지 못하고,
+         문장 확인과 체크리스트에서도 바른 문장으로 세지 않는다.
+       - Turn은 제자리에서 방향만 돌고, 숫자 없는 Go straight는
+         막힐 때까지 간다. 보물 칸과 장소 칸은 지나갈 수 없다.
+       ============================================================ */
+    var SIZE = 7;
+    var DIRS = [
+      { dr: -1, dc: 0, ko: '위쪽', arrow: 0 },
+      { dr: 0, dc: 1, ko: '오른쪽', arrow: 90 },
+      { dr: 1, dc: 0, ko: '아래쪽', arrow: 180 },
+      { dr: 0, dc: -1, ko: '왼쪽', arrow: 270 }
+    ];
+    var PLACES = {
+      zoo:        { en: 'Zoo',          ko: '동물원',     color: '#4f9e8f', icon: 'i-zoo', cat: 'building' },
+      library:    { en: 'Library',      ko: '도서관',     color: '#4e7fb8', icon: 'i-library', cat: 'building' },
+      hospital:   { en: 'Hospital',     ko: '병원',       color: '#d95f5f', icon: 'i-hospital', cat: 'building' },
+      bakery:     { en: 'Bakery',       ko: '빵집',       color: '#c98d45', icon: 'i-bakery', cat: 'building' },
+      museum:     { en: 'Museum',       ko: '박물관',     color: '#96684a', icon: 'i-museum', cat: 'building' },
+      restaurant: { en: 'Restaurant',   ko: '식당',       color: '#cf6f52', icon: 'i-restaurant', cat: 'building' },
+      school:     { en: 'School',       ko: '학교',       color: '#e8a13a', icon: 'i-school', cat: 'building' },
+      park:       { en: 'Park',         ko: '공원',       color: '#5fa85c', icon: 'i-park', cat: 'building' },
+      bank:       { en: 'Bank',         ko: '은행',       color: '#b08a2e', icon: 'i-bank', cat: 'building' },
+      cafe:       { en: 'Cafe',         ko: '카페',       color: '#a9743f', icon: 'i-cafe', cat: 'building' },
+      tree:       { en: 'Tree',         ko: '나무',       color: '#3e8e4f', icon: 'i-tree', cat: 'nature' },
+      flower:     { en: 'Flower',       ko: '꽃',         color: '#e2709e', icon: 'i-flower', cat: 'nature' },
+      rock:       { en: 'Rock',         ko: '바위',       color: '#9a958c', icon: 'i-rock', cat: 'nature' },
+      /* 아래는 예전 버전에서 놓을 수 있었던 장소들이다. 이제 고르기 목록에는
+         나오지 않지만(hidden), 예전에 저장된 지도에 남아 있을 수 있어서
+         이름·그림을 그릴 때 오류가 나지 않도록 정의만 남겨 둔다. */
+      cinema:     { en: 'Cinema',       ko: '영화관',     color: '#7a5fb0', icon: 'i-cinema', cat: 'building', hidden: true },
+      lake:       { en: 'Lake',         ko: '호수',       color: '#4e9fd8', icon: 'i-lake', cat: 'nature', hidden: true },
+      mountain:   { en: 'Mountain',     ko: '산',         color: '#8a7f72', icon: 'i-mountain', cat: 'nature', hidden: true },
+      crosswalk:  { en: 'Crosswalk',    ko: '횡단보도',   color: '#6b7a8d', icon: 'i-crosswalk', cat: 'street', hidden: true },
+      trafficlight:{ en: 'Traffic Light', ko: '신호등',   color: '#555f6e', icon: 'i-trafficlight', cat: 'street', hidden: true },
+      fountain:   { en: 'Fountain',     ko: '분수',       color: '#5fb3c9', icon: 'i-fountain', cat: 'street', hidden: true },
+      bridge:     { en: 'Bridge',       ko: '다리',       color: '#b0763a', icon: 'i-bridge', cat: 'street', hidden: true },
+      busstop:    { en: 'Bus Stop',     ko: '버스 정류장', color: '#d9a03a', icon: 'i-busstop', cat: 'street', hidden: true }
+    };
+    var PLACE_CATS = [
+      { id: 'building', ko: '건물' },
+      { id: 'nature', ko: '자연' }
+    ];
+    var PLACE_KEYS = Object.keys(PLACES);
+    var TREASURES = {
+      chest: { ko: '보물상자', icon: 'i-chest' },
+      gem:   { ko: '보석', icon: 'i-gem' },
+      crown: { ko: '왕관', icon: 'i-crown' },
+      trophy:{ ko: '트로피', icon: 'i-trophy' },
+      coin:  { ko: '동전', icon: 'i-coin' },
+      soccer:{ ko: '축구공', icon: 'i-soccer' },
+      robot: { ko: '로봇', icon: 'i-robot' },
+      gamepad:{ ko: '게임기', icon: 'i-gamepad' },
+      fossil:{ ko: '공룡 화석', icon: 'i-fossil' },
+      hat:   { ko: '모자', icon: 'i-hat' },
+      shell: { ko: '조개', icon: 'i-shell' }
+    };
+    var CHARS = {
+      bear:   { ko: '곰돌이', icon: 'i-bear' },
+      rabbit: { ko: '토끼',   icon: 'i-rabbit' },
+      cat:    { ko: '고양이', icon: 'i-cat' },
+      penguin:{ ko: '펭귄',   icon: 'i-penguin' }
+    };
+    var DIFFS = {
+      easy:   { ko: '쉬움', stars: '★',     minSent: 3, needNextTo: false, minTurns: 0, label: '기본', help: '문장 도움이 처음부터 열려 있어요', helpDetail: '단어와 문장 틀을 보고 직접 써요 · 바른 철자도 보여줘요' },
+      normal: { ko: '보통', stars: '★★',   minSent: 4, needNextTo: true,  minTurns: 0, label: '보통', help: '철자가 틀리면 바른 철자를 보여줘요', helpDetail: '바른 철자를 보고 직접 고쳐 써요' },
+      hard:   { ko: '도전', stars: '★★★', minSent: 6, needNextTo: true,  minTurns: 0, label: '도전', help: '철자가 틀리면 밑줄로만 알려줘요', helpDetail: '바른 철자는 보여주지 않아요' }
+    };
+    var NUMWORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+
+    /* ---------------- 상태 ---------------- */
+    var CLASS_SIZE = 30;
+    var state = {
+      cls: null, num: null, name: '', char: 'bear',
+      step: 1,
+      selTreasureKind: 'chest',
+      selPlace: 'library',
+      placeTab: 'building',
+      map: null,          // 작업 중인 지도 데이터
+      myMaps: [],         // {id, savedAt, data}
+      play: null          // 풀기 상태
+    };
+    function freshMap() {
+      return {
+        cls: state.cls, makerNum: state.num, makerName: state.name, char: state.char,
+        title: '',
+        diff: 'easy', start: { r: 6, c: 3 },
+        treasure: null,           // {r,c,kind}
+        places: {},               // "r,c" -> placeKey
+        text: ''
+      };
+    }
+    state.map = freshMap();
+
+    function key(r, c) { return r + ',' + c; }
+    function inBounds(r, c) { return r >= 0 && r < SIZE && c >= 0 && c < SIZE; }
+    function facingFor(r, c) {
+      var dr = 3 - r, dc = 3 - c;
+      if (Math.abs(dc) > Math.abs(dr)) return dc > 0 ? 1 : 3;
+      if (dr !== 0) return dr > 0 ? 2 : 0;
+      return 0;
+    }
+    /* 그 방향으로 한 칸 앞이 지도 밖이면 true (지도 밖을 보고 출발할 수는 없다) */
+    function dirFacesOutside(m, d) {
+      return !inBounds(m.start.r + DIRS[d].dr, m.start.c + DIRS[d].dc);
+    }
+    /* 시작 방향: 학생이 고른 방향(m.startDir)이 있고 지도 밖을 보지 않으면 그 방향.
+       고른 방향이 없거나(예전 지도) 새 출발점에서 지도 밖을 보게 되면
+       예전처럼 마을 가운데쪽을 본다. */
+    function startDir(m) {
+      if (typeof m.startDir === 'number' && m.startDir >= 0 && m.startDir < 4 && !dirFacesOutside(m, m.startDir)) return m.startDir;
+      return facingFor(m.start.r, m.start.c);
+    }
+    function isBlocked(m, r, c) {
+      if (!inBounds(r, c)) return true;
+      if (m.places[key(r, c)]) return true;
+      if (m.treasure && m.treasure.r === r && m.treasure.c === c) return true;
+      return false;
+    }
+    function placeNameAt(m, r, c) {
+      var k = m.places[key(r, c)];
+      return k ? PLACES[k].en : null;
+    }
+    function findPlace(m, nameEn) {
+      var out = [];
+      Object.keys(m.places).forEach(function (k) {
+        if (PLACES[m.places[k]].en.toLowerCase() === nameEn.toLowerCase()) {
+          var p = k.split(','); out.push({ r: +p[0], c: +p[1], k: m.places[k] });
+        }
+      });
+      return out;
+    }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+      });
+    }
+
+    /* ---------------- 유틸 ---------------- */
+    function $(id) { return document.getElementById(id); }
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    }
+    function svgUse(icon, cls) {
+      var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      if (cls) s.setAttribute('class', cls);
+      var u = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      u.setAttribute('href', '#' + icon);
+      s.appendChild(u);
+      return s;
+    }
+    var toastTimer = null;
+    function toast(msg) {
+      var t = $('toast'); t.textContent = msg; t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+    }
+    function showScreen(id) {
+      ['screen-entry', 'screen-make', 'screen-done', 'screen-play', 'screen-teacher'].forEach(function (s) {
+        $(s).classList.toggle('active', s === id);
+      });
+      window.scrollTo(0, 0);
+    }
+    /* 첫 화면(입장 화면)으로 돌아가기: 게임 중간 어느 화면에서든 쓸 수 있다 */
+    function goToEntry() {
+      try { saveDraftNow(); } catch (e) { /* 자동 저장 실패가 이동을 막지 않게 */ }
+      sessionStarted = false;
+      try { stopWalk(); } catch (e) { /* 걷기 재생이 없으면 무시 */ }
+      try { if (friendWatchRef) { friendWatchRef.off(); friendWatchRef = null; } } catch (e) { /* 무시 */ }
+      try { if (teacherWatchRef) { teacherWatchRef.off(); teacherWatchRef = null; } } catch (e) { /* 무시 */ }
+      var openBacks = document.querySelectorAll('.modal-back.open');
+      for (var i = 0; i < openBacks.length; i++) openBacks[i].classList.remove('open');
+      showScreen('screen-entry');
+    }
+    function hasMakerProgress() {
+      var m = state.map;
+      if (!m) return false;
+      return !!(m.treasure || Object.keys(m.places || {}).length || (m.text || '').trim() || (m.title || '').trim());
+    }
+    function requestGoHome(from) {
+      if (from === 'make' && hasMakerProgress()) {
+        if (FB.ready && sessionStarted) {
+          saveDraftNow();
+          openConfirm('첫 화면으로 돌아갈까요?',
+            '만들던 지도는 자동으로 저장돼 있어요. 첫 화면에서 같은 반·번호·이름으로 다시 들어오면, 만들던 단계부터 이어서 만들 수 있어요.',
+            '첫 화면으로 가기', goToEntry);
+        } else {
+          openConfirm('첫 화면으로 돌아갈까요?',
+            '지금 만드는 지도는 아직 완성·제출되지 않았어요. 첫 화면으로 가면 만들고 있던 내용이 사라져요.',
+            '첫 화면으로 가기', goToEntry);
+        }
+      } else {
+        goToEntry();
+      }
+    }
+    $('homeBtnMake').addEventListener('click', function () { requestGoHome('make'); });
+    $('homeBtnDone').addEventListener('click', function () { requestGoHome('done'); });
+    $('homeBtnPlay').addEventListener('click', function () { requestGoHome('play'); });
+
+    /* ---------------- 효과음: 이번 차시는 소리 기능을 쓰지 않는다 ---------------- */
+    var SFX = {
+      click: function () {}, place: function () {}, step: function () {},
+      turn: function () {}, bump: function () {}, bad: function () {},
+      good: function () {}, pop: function () {}
+    };
+
+    /* ============================================================
+       Firebase 제출함
+       - 선생님 Firebase 프로젝트의 설정값을 연결하면 켜진다.
+       - 저장 구조: classes/{반}/students/{번호} = {name, char, status}
+                    classes/{반}/maps/{번호}/{지도ID} = {지도 데이터, submittedAt}
+                    (한 학생이 지도를 여러 개 내면 지도ID별로 모두 쌓인다.
+                     예전 방식의 classes/{반}/maps/{번호} = {지도 1개} 데이터도
+                     읽을 때 1개짜리 목록으로 바꿔서 함께 보여 준다.)
+       - 설정값이 코드에 박혀 있으면(FIREBASE_CONFIG) 자동으로 연결되고,
+         없으면 입장 화면의 "서버 연결 설정"에서 붙여 넣어 연결한다.
+       - 아래 설정값은 선생님 Firebase 프로젝트(treasure-map-grade5)의
+         공개용 웹 설정값으로, 코드에 내장되어 있어 학생 기기에서는
+         별도 설정 없이 자동으로 제출함에 연결된다.
+       ============================================================ */
+    var FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBS6tqEbJBJxgi9V_vviOKG7RmJO1lIwYY",
+      authDomain: "treasure-map-grade5.firebaseapp.com",
+      databaseURL: "https://treasure-map-grade5-default-rtdb.firebaseio.com",
+      projectId: "treasure-map-grade5",
+      storageBucket: "treasure-map-grade5.firebasestorage.app",
+      messagingSenderId: "333316238740",
+      appId: "1:333316238740:web:19dee0c733815504d9b381"
+    };
+    var FB = { ready: false, db: null, config: null };
+    function parseFirebaseConfig(text) {
+      var cfg = {}, m, re = /(\w+)\s*:\s*"([^"]*)"/g, found = false;
+      while ((m = re.exec(text || '')) !== null) { cfg[m[1]] = m[2]; found = true; }
+      if (!found) { try { cfg = JSON.parse(text); found = !!cfg; } catch (e) { /* 무시 */ } }
+      if (!cfg.apiKey || !cfg.projectId) return null;
+      if (!cfg.databaseURL) cfg.databaseURL = 'https://' + cfg.projectId + '-default-rtdb.firebaseio.com';
+      return cfg;
+    }
+    function initFirebase(cfg) {
+      if (!window.firebase || !firebase.database) return false;
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(cfg);
+        FB.db = firebase.database();
+        FB.config = cfg; FB.ready = true;
+        updateFbStatusUI();
+        return true;
+      } catch (e) { FB.ready = false; FB.db = null; return false; }
+    }
+    function updateFbStatusUI() {
+      var box = $('fbStatus'), txt = $('fbStatusText');
+      if (!box || !txt) return;
+      box.classList.toggle('on', FB.ready);
+      txt.innerHTML = FB.ready
+        ? '<b>제출함 서버 연결됨</b> · 제출하면 우리 반 친구들과 선생님이 바로 볼 수 있어요.'
+        : '<b>제출함 서버에 연결하지 못했어요</b> · 인터넷 연결을 확인하고 새로고침하면 자동으로 다시 연결돼요. 연결되기 전에는 이 기기에서 만들기만 할 수 있어요.';
+    }
+    function studentsRef(cls) { return FB.db.ref('classes/' + cls + '/students'); }
+    function mapsRef(cls) { return FB.db.ref('classes/' + cls + '/maps'); }
+    /* 입장 기록: 만드는 중으로 표시 (이미 제출 완료면 그대로 둔다) */
+    function registerPresence() {
+      if (!FB.ready || !state.cls || !state.num) return;
+      var ref = studentsRef(state.cls).child(String(state.num));
+      ref.once('value').then(function (snap) {
+        var cur = snap.val() || {};
+        ref.set({
+          name: state.name, char: state.char,
+          status: cur.status === 'done' ? 'done' : 'making',
+          updatedAt: Date.now()
+        });
+      }).catch(function () { /* 오프라인이면 조용히 넘어간다 */ });
+    }
+    /* ============================================================
+       이어서 하기 (초안 자동 저장)
+       - 만드는 동안 지도 전체(출발점·방향, 보물, 장소, 난이도, 안내문, 지금 단계)를
+         classes/{반}/drafts/{번호} 에 자동 저장한다. 이름도 함께 저장해 두고,
+         다시 들어올 때 반·번호·이름이 모두 같아야만 이어서 하기를 제안한다.
+         같은 번호라도 이름이 다르면 남의 저장본을 열지도, 덮어쓰지도 않는다.
+       - 제출에 성공하면 그 학생의 저장본은 지운다.
+       ============================================================ */
+    var sessionStarted = false;
+    var knownDraftName = null;   /* 이 번호 칸에 저장된 저장본의 주인 이름 */
+    var lastDraftSignature = null;
+    var suppressDraftSignature = null;
+    var draftSaveTimer = null;
+    var pendingDraft = null;
+    function draftsRef(cls) { return FB.db.ref('classes/' + cls + '/drafts'); }
+    function draftSignature() {
+      try { return JSON.stringify({ m: state.map, s: state.step }); } catch (e) { return null; }
+    }
+    function draftWorthSaving(m) {
+      if (!m) return false;
+      return !!(m.treasure || Object.keys(m.places || {}).length || (m.text || '').trim() ||
+        typeof m.startDir === 'number' || m.diff !== 'easy' ||
+        !(m.start && m.start.r === 6 && m.start.c === 3));
+    }
+    function draftHasContent(draft) {
+      if (!draft || !draft.map) return false;
+      return draftWorthSaving(draft.map) || (draft.step || 1) > 1;
+    }
+    function updateDraftStatus(saved) {
+      var s = $('draftStatus');
+      if (!s) return;
+      if (!FB.ready) { s.textContent = '서버에 연결되면 자동 저장돼요'; return; }
+      s.textContent = saved ? '자동 저장됨 ✓ · 나가도 이어서 만들 수 있어요' : '자동 저장 켜짐 · 나가도 이어서 만들 수 있어요';
+    }
+    function saveDraftNow() {
+      if (!FB.ready || !sessionStarted) return;
+      if (!state.cls || !state.num || !state.name) return;
+      if (!$('screen-make').classList.contains('active') && !$('screen-done').classList.contains('active')) return;
+      if (knownDraftName && knownDraftName !== state.name) return;
+      var sig = draftSignature();
+      if (sig === null) return;
+      if (sig === suppressDraftSignature) { lastDraftSignature = sig; return; }
+      if (sig === lastDraftSignature) return;
+      lastDraftSignature = sig;
+      var ref = draftsRef(state.cls).child(String(state.num));
+      if (!draftWorthSaving(state.map) && state.step === 1) {
+        /* 다 지워서 빈 지도가 되면 저장본도 함께 지운다 */
+        ref.remove().then(function () { if (knownDraftName === state.name) knownDraftName = null; }).catch(function () {});
+        return;
+      }
+      var payload = { name: state.name, char: state.char, step: state.step, map: clone(state.map), updatedAt: Date.now() };
+      ref.set(payload).then(function () {
+        knownDraftName = state.name;
+        updateDraftStatus(true);
+      }).catch(function () { lastDraftSignature = null; });
+    }
+    function scheduleDraftSave() {
+      clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(saveDraftNow, 600);
+    }
+    function deleteDraftNode(cls, num) {
+      if (!FB.ready || !cls || !num) return Promise.resolve();
+      return draftsRef(cls).child(String(num)).remove().catch(function () {});
+    }
+    /* 제출 성공 뒤: 이름이 같은 본인 저장본만 지운다 */
+    function deleteOwnDraft(cls, num, name) {
+      if (!FB.ready || !cls || !num) return;
+      var ref = draftsRef(cls).child(String(num));
+      ref.once('value').then(function (snap) {
+        var d = snap.val();
+        if (d && d.name === name) {
+          ref.remove().catch(function () {});
+          if (state.cls === cls && String(state.num) === String(num)) knownDraftName = null;
+        }
+      }).catch(function () {});
+    }
+    /* 화면을 벗어나거나 탭이 숨겨지면 마지막 상태를 한 번 더 저장한다 */
+    document.addEventListener('visibilitychange', function () { if (document.hidden) saveDraftNow(); });
+    window.addEventListener('pagehide', function () { saveDraftNow(); });
+    setInterval(saveDraftNow, 2000);
+    /* 한 학생이 낸 지도들을 목록으로 바꾸기.
+       새 구조(지도ID -> 지도)와 예전 구조(지도 1개가 바로 들어 있음)를 모두 받는다. */
+    function studentMapsList(node) {
+      if (!node || typeof node !== 'object') return [];
+      if (node.treasure !== undefined || node.text !== undefined || node.start !== undefined || node.makerName !== undefined) {
+        var legacy = clone(node);
+        if (!legacy._id) legacy._id = 'legacy';
+        return [legacy];
+      }
+      var out = [];
+      Object.keys(node).forEach(function (k) {
+        var rec = node[k];
+        if (rec && typeof rec === 'object' && (rec.treasure !== undefined || rec.text !== undefined || rec.start !== undefined)) {
+          var c = clone(rec);
+          if (!c._id) c._id = k;
+          out.push(c);
+        }
+      });
+      out.sort(function (a, b) { return (b.submittedAt || 0) - (a.submittedAt || 0); });
+      return out;
+    }
+    function formatSubmittedAt(ts) {
+      if (!ts) return '';
+      try {
+        return new Date(ts).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (e) { return ''; }
+    }
+    function mapDisplayTitle(rec) {
+      return (rec.title && String(rec.title).trim()) ? String(rec.title).trim() : '제목 없는 지도';
+    }
+    function submitMapToServer(data) {
+      if (!FB.ready) return Promise.reject(new Error('offline'));
+      var payload = clone(data);
+      var mapId = payload._id || ('m' + Date.now());
+      payload._id = mapId;
+      payload.submittedAt = Date.now();
+      var studentMapsRef = mapsRef(data.cls).child(String(data.makerNum));
+      return studentMapsRef.once('value').then(function (snap) {
+        var cur = snap.val();
+        var isLegacy = !!(cur && typeof cur === 'object' && (cur.treasure !== undefined || cur.text !== undefined || cur.start !== undefined || cur.makerName !== undefined));
+        if (isLegacy) {
+          /* 예전 1개짜리 지도를 목록 구조로 옮긴 뒤, 새 지도를 함께 넣는다 (예전 지도를 지우지 않기) */
+          var legacy = clone(cur);
+          var legacyId = legacy._id || 'legacy';
+          legacy._id = legacyId;
+          var dict = {};
+          dict[legacyId] = legacy;
+          dict[mapId] = payload;
+          return studentMapsRef.set(dict);
+        }
+        return studentMapsRef.child(mapId).set(payload);
+      }).then(function () {
+        return studentsRef(data.cls).child(String(data.makerNum)).set({
+          name: data.makerName, char: data.char, status: 'done', updatedAt: Date.now()
+        });
+      });
+    }
+    function mapFromServer(rec) {
+      var m = freshMap();
+      m.cls = rec.cls; m.makerNum = rec.makerNum; m.makerName = rec.makerName;
+      m.char = CHARS[rec.char] ? rec.char : 'bear';
+      m.title = rec.title || '';
+      m.diff = DIFFS[rec.diff] ? rec.diff : 'easy';
+      m.start = rec.start || { r: 6, c: 3 };
+      m.treasure = rec.treasure || null;
+      m.places = rec.places || {};
+      m.text = rec.text || '';
+      if (typeof rec.startDir === 'number') m.startDir = rec.startDir;
+      if (rec._id) m._id = rec._id;
+      return m;
+    }
+    /* 확인 모달 (브라우저 confirm 대신 페이지 안 모달) */
+    var confirmCb = null;
+    function openConfirm(title, text, yesLabel, onYes) {
+      $('confirmTitle').textContent = title;
+      $('confirmText').textContent = text;
+      $('confirmYesBtn').textContent = yesLabel;
+      confirmCb = onYes;
+      $('confirmModal').classList.add('open');
+    }
+    $('confirmYesBtn').addEventListener('click', function () {
+      $('confirmModal').classList.remove('open');
+      var cb = confirmCb; confirmCb = null;
+      if (cb) cb();
+    });
+    $('confirmNoBtn').addEventListener('click', function () {
+      $('confirmModal').classList.remove('open');
+      confirmCb = null;
+    });
+
+    /* ---------------- 문장 나누기 ---------------- */
+    function splitSentences(text) {
+      var out = [], buf = '', i, ch;
+      text = (text || '').replace(/\s+/g, ' ').trim();
+      for (i = 0; i < text.length; i++) {
+        ch = text[i];
+        buf += ch;
+        if (ch === '.' || ch === '!' || ch === '?') {
+          if (buf.trim()) out.push(buf.trim());
+          buf = '';
+        }
+      }
+      if (buf.trim()) out.push(buf.trim());
+      return out;
+    }
+
+    /* ============================================================
+       안내문 해석 + 걷기 시뮬레이션
+       ============================================================ */
+    function normPlaceName(s) {
+      s = (s || '').toLowerCase().replace(/\./g, '').trim();
+      for (var i = 0; i < PLACE_KEYS.length; i++) {
+        if (PLACES[PLACE_KEYS[i]].en.toLowerCase() === s) return PLACES[PLACE_KEYS[i]].en;
+      }
+      return null;
+    }
+    function parseMovePart(p) {
+      var m;
+      p = p.trim();
+      m = p.match(/^go straight$/);
+      if (m) return { type: 'go', n: Infinity, raw: p };
+      m = p.match(/^go straight (one|two|three|four|five|six|seven|eight|nine|ten|\d+) blocks?$/);
+      if (m) return { type: 'go', n: NUMWORDS[m[1]] || parseInt(m[1], 10), raw: p };
+      m = p.match(/^turn (left|right)$/);
+      if (m) return { type: 'turn', side: m[1], raw: p };
+      /* 'turn left/right at the ___'는 더 이상 해석하지 않는다.
+         at the ___가 붙은 조각은 null을 돌려 문장 전체가 unknown이 되고,
+         문장 확인·체크리스트에서 바른 문장으로 세어지지 않는다. */
+      return null;
+    }
+    function parseSentence(raw) {
+      var s = raw.replace(/\s+/g, ' ').trim();
+      var body = s.replace(/[\.!?]+$/, '').trim();
+      var low = body.toLowerCase();
+      var m;
+      /* 복합 문장: go/turn 으로 시작하고 ' and '로 이어진 경우 */
+      if ((low.indexOf('go straight') === 0 || low.indexOf('turn') === 0) && low.indexOf(' and ') > -1) {
+        var parts = low.split(' and ');
+        var cmds = [], okAll = true;
+        parts.forEach(function (p) {
+          var c = parseMovePart(p);
+          if (!c) okAll = false; else cmds.push(c);
+        });
+        if (okAll && cmds.length >= 2) return { kind: 'seq', cmds: cmds, raw: s };
+        if (okAll && cmds.length === 1) return Object.assign({ kind: 'move', raw: s }, cmds[0]);
+      }
+      var single = parseMovePart(low);
+      if (single) return Object.assign({ kind: 'move', raw: s }, single);
+      m = low.match(/^it'?s on your (left|right)$/) || low.match(/^it is on your (left|right)$/);
+      if (m) return { kind: 'loc', loc: 'side', side: m[1], raw: s };
+      m = low.match(/^it'?s next to the (.+)$/);
+      if (m) return { kind: 'loc', loc: 'nextto', place: normPlaceName(m[1]), placeRaw: m[1], raw: s };
+      return { kind: 'unknown', raw: s };
+    }
+
+    /* 걷기 시뮬레이션: 프레임 목록과 문장별 결과, 도착 판정을 돌려준다 */
+    function simulate(m, text) {
+      var sentences = splitSentences(text);
+      var parsed = sentences.map(parseSentence);
+      var pos = { r: m.start.r, c: m.start.c, dir: startDir(m) };
+      var frames = [{ r: pos.r, c: pos.c, dir: pos.dir, sentIdx: -1, ev: 'start' }];
+      var sentResults = [];
+      var turnCount = 0, hasNextTo = false, mentioned = [], blockedNotes = [];
+      var dirCount = parsed.filter(function (p) { return p.kind !== 'unknown'; }).length;
+
+      function pushFrame(ev, sentIdx) {
+        frames.push({ r: pos.r, c: pos.c, dir: pos.dir, sentIdx: sentIdx, ev: ev });
+      }
+      function doTurn(side) {
+        pos.dir = (pos.dir + (side === 'left' ? 3 : 1)) % 4;
+        turnCount++;
+      }
+      function stepForward() {
+        var d = DIRS[pos.dir];
+        var nr = pos.r + d.dr, nc = pos.c + d.dc;
+        if (isBlocked(m, nr, nc)) return false;
+        pos.r = nr; pos.c = nc;
+        return true;
+      }
+      function runCmd(cmd, si) {
+        var i, d;
+        if (cmd.type === 'go') {
+          var want = cmd.n === Infinity ? 99 : cmd.n, moved = 0, bumped = false;
+          for (i = 0; i < want; i++) {
+            if (stepForward()) { moved++; pushFrame('step', si); }
+            else { bumped = true; break; }
+          }
+          if (cmd.n === Infinity) {
+            if (moved === 0) { pushFrame('bump', si); blockedNotes.push({ si: si, msg: '앞이 막혀서 한 칸도 못 갔어요.' }); }
+          } else if (bumped) {
+            pushFrame('bump', si);
+            blockedNotes.push({ si: si, msg: (si + 1) + '번 문장: ' + moved + '칸 가고 막혔어요. (' + cmd.n + '칸을 다 못 갔어요)' });
+          }
+        } else if (cmd.type === 'turn') {
+          doTurn(cmd.side); pushFrame('turn', si);
+        }
+      }
+
+      parsed.forEach(function (p, si) {
+        if (p.kind === 'move') { runCmd(p, si); }
+        else if (p.kind === 'seq') { p.cmds.forEach(function (c) { runCmd(c, si); }); }
+        else if (p.kind === 'loc') {
+          if (p.loc === 'nextto') { hasNextTo = true; if (p.place) mentioned.push(p.place); }
+        }
+        sentResults.push({ parsed: p, endPos: { r: pos.r, c: pos.c, dir: pos.dir } });
+      });
+
+      /* 도착 판정 */
+      var final = { r: pos.r, c: pos.c, dir: pos.dir };
+      var adjacent = false, locChecks = [];
+      if (m.treasure) {
+        adjacent = Math.abs(final.r - m.treasure.r) + Math.abs(final.c - m.treasure.c) === 1;
+        parsed.forEach(function (p, si) {
+          if (p.kind !== 'loc') return;
+          var ok = null, label = '';
+          var L = DIRS[(final.dir + 3) % 4], R = DIRS[(final.dir + 1) % 4];
+          if (p.loc === 'side') {
+            var v = p.side === 'left' ? L : R;
+            ok = (final.r + v.dr === m.treasure.r && final.c + v.dc === m.treasure.c);
+            label = "It's on your " + p.side + '.';
+          } else if (p.loc === 'nextto') {
+            label = "It's next to the " + (p.place || p.placeRaw) + '.';
+            if (!p.place) ok = false;
+            else {
+              ok = findPlace(m, p.place).some(function (t) {
+                return Math.abs(t.r - m.treasure.r) + Math.abs(t.c - m.treasure.c) === 1;
+              });
+            }
+          }
+          locChecks.push({ si: si, ok: ok, label: label });
+        });
+      }
+      var arrived = !!m.treasure && adjacent && locChecks.every(function (x) { return x.ok; });
+      return {
+        sentences: sentences, parsed: parsed, frames: frames, final: final,
+        adjacent: adjacent, locChecks: locChecks, arrived: arrived,
+        turnCount: turnCount, hasNextTo: hasNextTo, mentioned: mentioned,
+        blockedNotes: blockedNotes, dirCount: dirCount
+      };
+    }
+
+    /* ---------------- 3단계 게이트: 장소 수 · 길 열림 · 보물 옆(왼쪽/오른쪽 중 하나) ---------------- */
+    /* 출발점에서 보물 옆 칸까지의 최단 경로(상태 BFS)에서 도는 횟수를 센다 */
+    function shortestPathTurns(m) {
+      if (!m.treasure) return null;
+      var goals = {};
+      [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
+        var r = m.treasure.r + d[0], c = m.treasure.c + d[1];
+        if (inBounds(r, c) && !m.places[key(r, c)]) goals[key(r, c)] = true;
+      });
+      if (!Object.keys(goals).length) return null;
+      var start = { r: m.start.r, c: m.start.c, dir: startDir(m) };
+      var sk = start.r + ',' + start.c + ',' + start.dir;
+      var prev = {}; prev[sk] = null;
+      var queue = [start], foundKey = goals[key(start.r, start.c)] ? sk : null;
+      while (queue.length && !foundKey) {
+        var cur = queue.shift();
+        var ck = cur.r + ',' + cur.c + ',' + cur.dir;
+        var nexts = [
+          { r: cur.r, c: cur.c, dir: (cur.dir + 3) % 4, act: 'turn' },
+          { r: cur.r, c: cur.c, dir: (cur.dir + 1) % 4, act: 'turn' },
+          { r: cur.r + DIRS[cur.dir].dr, c: cur.c + DIRS[cur.dir].dc, dir: cur.dir, act: 'go' }
+        ];
+        for (var i = 0; i < nexts.length; i++) {
+          var nx = nexts[i];
+          if (nx.act === 'go' && isBlocked(m, nx.r, nx.c)) continue;
+          var nk = nx.r + ',' + nx.c + ',' + nx.dir;
+          if (prev[nk] !== undefined) continue;
+          prev[nk] = { from: ck, act: nx.act };
+          if (goals[key(nx.r, nx.c)]) { foundKey = nk; break; }
+          queue.push(nx);
+        }
+      }
+      if (!foundKey) return null;
+      var turns = 0, actions = 0, k2 = foundKey;
+      while (prev[k2]) { if (prev[k2].act === 'turn') turns++; actions++; k2 = prev[k2].from; }
+      return { turns: turns, actions: actions };
+    }
+    function computeGates(m) {
+      var cnt = Object.keys(m.places).length;
+      var path = shortestPathTurns(m);
+      var leftOk = !!(m.treasure && m.places[key(m.treasure.r, m.treasure.c - 1)]);
+      var rightOk = !!(m.treasure && m.places[key(m.treasure.r, m.treasure.c + 1)]);
+      return {
+        cnt: cnt, countOk: cnt >= 6,
+        path: path, pathOk: !!path,
+        leftOk: leftOk, rightOk: rightOk, sidesOk: leftOk || rightOk,
+        all: cnt >= 6 && !!path && (leftOk || rightOk)
+      };
+    }
+
+    /* ============================================================
+       문장 검사 — 4단계 방식
+       ① 문장마다 첫 글자가 대문자인지, 마지막에 마침표가 있는지 확인한다.
+       ② 대문자로 시작해 마침표로 끝나는 사이를 하나의 문장으로 인식한다.
+          (splitSentences가 마침표·느낌표·물음표를 경계로 문장을 나눈다)
+       ③ 문장 안의 단어를 하나씩 꺼내, 오늘 배운 단어(문장 틀 단어 + 지금 놓을
+          수 있는 장소 이름 + 숫자 단어)와 글자까지 정확히 같은지 본다.
+          조금이라도 다르면 그 단어는 틀린 것이다. 비슷한 오타를 모아 둔
+          사전으로 봐주거나 편집 거리로 "이 정도면 맞겠지" 하고 넘기는 일은
+          하지 않는다. 예전 버전의 숨은 장소(Bus Stop 등)는 지금 가르치는
+          단어가 아니므로 배운 단어에 넣지 않는다.
+       ③-2 문장이 해석기(parseSentence)가 읽을 수 있는 완성된 문장인지도 함께
+          본다. 철자가 다 맞아도 방향 없는 turn처럼 문장이 끝나지 않았으면
+          "좋아요"로 뜨지 않는다.
+       ④ 피드백은 난이도마다 다르다 (renderSpellFeedback·computeChecklist):
+          쉬움·보통은 바른 단어를 보여 주고 학생이 보고 직접 고쳐 쓰고,
+          도전은 틀린 단어에 밑줄만 그어 알려 주고 바른 단어는 보여주지 않는다.
+       ============================================================ */
+    /* Damerau 거리: 검출에는 쓰지 않고, 틀린 단어를 찾은 뒤 쉬움·보통에서
+       "어떤 단어를 쓰려던 걸까" 제안 후보를 고를 때만 쓴다 */
+    function levenshtein(a, b) {
+      var dp = [], i, j;
+      for (i = 0; i <= a.length; i++) { dp.push([i]); }
+      for (j = 0; j <= b.length; j++) { dp[0][j] = j; }
+      for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) {
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
+        }
+      }
+      return dp[a.length][b.length];
+    }
+    /* 오늘 배운 단어 전체: 문장 틀 단어 + 지금 놓을 수 있는 장소 이름 단어 +
+       숫자 단어. 이 목록에 글자까지 정확히 들어 있는 단어만 바른 것으로
+       인정한다. 예전 버전의 숨은 장소(hidden)는 지도에 그릴 때만 쓰이고
+       가르치는 단어가 아니므로 넣지 않는다. 넣으면 Bus Stop의 'stop' 같은
+       단어가 배운 단어로 둔갑해 "Go st."에 'st → stop' 같은 엉뚱한 제안이 뜬다. */
+    var FRAME_WORDS = {};
+    ('go straight block blocks turn left right at the it its is on your next to and corner ' +
+     'one two three four five six seven eight nine ten hello hi treasure a an').split(' ').forEach(function (w) { FRAME_WORDS[w] = true; });
+    var KNOWN_WORDS = {};
+    Object.keys(FRAME_WORDS).forEach(function (w) { KNOWN_WORDS[w] = true; });
+    PLACE_KEYS.forEach(function (k) {
+      if (PLACES[k].hidden) return;
+      PLACES[k].en.toLowerCase().split(' ').forEach(function (w) { KNOWN_WORDS[w] = true; });
+    });
+    Object.keys(NUMWORDS).forEach(function (w) { KNOWN_WORDS[w] = true; });
+    var KNOWN_LIST = Object.keys(KNOWN_WORDS);
+    /* 틀린 단어에 대한 제안 후보: 첫 글자가 같고 가장 가까운 배운 단어.
+       검출 기준이 아니라 제안용이라서, 가까운 단어가 없으면 null을 돌려준다. */
+    function nearestKnownWord(lower) {
+      if (!lower) return null;
+      /* 줄여 쓴 단어는 그 단어로 시작하는 배운 단어를 먼저 제안한다.
+         예: "st"는 straight의 줄임말로 보고 straight를 제안한다.
+         (예전에는 숨은 장소 Bus Stop의 stop이 거리 동점·긴 단어 우선 규칙에
+         걸려 'st → stop'으로 떴다) */
+      if (lower.length >= 2) {
+        var pre = null;
+        KNOWN_LIST.forEach(function (w) {
+          if (w.length > lower.length && w.indexOf(lower) === 0) {
+            if (!pre || w.length < pre.length) pre = w;
+          }
+        });
+        if (pre) return pre;
+      }
+      var best = null, bestDist = 99;
+      KNOWN_LIST.forEach(function (w) {
+        if (w.charAt(0) !== lower.charAt(0)) return;
+        if (Math.abs(w.length - lower.length) > 3) return;
+        var dist = levenshtein(lower, w);
+        if (dist < bestDist || (dist === bestDist && best && w.length > best.length)) { bestDist = dist; best = w; }
+      });
+      if (!best) return null;
+      if (bestDist <= 3) return best;
+      /* 긴 단어는 글자 빠짐이 겹치면 거리가 4까지 벌어진다 (strate↔straight).
+         검출이 아니라 제안이므로, 긴 배운 단어에 한해 거리 4까지만 허용한다. */
+      if (bestDist === 4 && best.length >= 8 && lower.length >= 5) return best;
+      return null;
+    }
+    /* 문장 단위 검사 결과:
+       format: [{si, kind, msg}] — 대문자·마침표·문법 짝 문제
+       words:  [{wrong, wrongLower, correct|null}] — 배운 단어가 아닌 단어 (중복 제거) */
+    function analyzeSentences(text) {
+      var format = [], words = [], seenWord = {};
+      var sents = splitSentences(text);
+      sents.forEach(function (s, i) {
+        var si = i + 1;
+        /* ① 첫 글자가 대문자인지 확인 */
+        if (/^[a-z]/.test(s)) format.push({ si: si, kind: 'capital', msg: si + '번 문장: 문장은 대문자로 시작해요.' });
+        /* ① 마지막에 마침표가 있는지 확인. 마침표 없이 끝나거나 ! ? 로 끝나면 마침표가 없는 것으로 본다 */
+        if (s.charAt(s.length - 1) !== '.') format.push({ si: si, kind: 'period', msg: si + '번 문장: 문장 끝에는 마침표(.)를 써요.' });
+        /* 문법 짝 확인: It's 표기와 one block / two blocks 짝 */
+        var low = s.toLowerCase();
+        if (/^its (on|next)\b/.test(low)) format.push({ si: si, kind: 'grammar', msg: si + "번 문장: Its가 아니라 It's로 써요." });
+        var gm = low.match(/go straight (one|two|three|four|five|six|seven|eight|nine|ten|\d+) (block|blocks)\b/);
+        if (gm) {
+          var num = NUMWORDS[gm[1]] !== undefined ? NUMWORDS[gm[1]] : parseInt(gm[1], 10);
+          if (num === 1 && gm[2] !== 'block') format.push({ si: si, kind: 'grammar', msg: si + '번 문장: one 뒤에는 block(단수)이에요.' });
+          if (num > 1 && gm[2] !== 'blocks') format.push({ si: si, kind: 'grammar', msg: si + '번 문장: ' + gm[1] + ' 뒤에는 blocks(복수)예요.' });
+        }
+        /* ③-2 문장 완성도: 해석기가 읽을 수 없는 문장인데 길 안내 단어가 들어
+           있으면, 철자가 다 맞아도 완성되지 않은 문장으로 본다.
+           예전에는 이 검사가 없어서 "Go straight two blocks and turn."처럼
+           방향 없는 turn 문장이 철자만으로 "좋아요"를 받았다. 인사말처럼
+           길 안내 단어가 없는 문장은 여기서 걸지 않는다(문장 수에도 안 셈).
+           'at the ___' 문형도 여기서 따로 잡는다: 단어 철자는 다 맞아도
+           이 활동에서는 쓰지 않는 문형이라 바른 문장으로 세지 않는다. */
+        var hasAtPhrase = /\bturn\s+(left|right)\s+at\s+the\b/.test(low);
+        if (hasAtPhrase) {
+          format.push({ si: si, kind: 'structure', msg: si + "번 문장: 'at the ___'는 쓰지 않아요. Turn left. / Turn right. 처럼 써요." });
+        }
+        if (parseSentence(s).kind === 'unknown' && !hasAtPhrase) {
+          var toks = low.replace(/[^a-z' ]/g, ' ').split(/\s+/).filter(function (t) { return t.length > 0; });
+          var bareTurn = false;
+          for (var ti = 0; ti < toks.length; ti++) {
+            if (toks[ti] === 'turn' && toks[ti + 1] !== 'left' && toks[ti + 1] !== 'right') { bareTurn = true; break; }
+          }
+          if (bareTurn) {
+            format.push({ si: si, kind: 'structure', msg: si + '번 문장: turn 뒤에 left나 right를 써요. (turn left / turn right)' });
+          } else if (toks.indexOf('go') !== -1 || toks.indexOf('turn') !== -1 || toks.indexOf('straight') !== -1) {
+            format.push({ si: si, kind: 'structure', msg: si + '번 문장: 길 안내 문장으로 읽기 어려워요. 문장 도움의 틀대로 끝까지 써 보세요.' });
+          }
+        }
+        /* ③ 단어 검출: 배운 단어와 정확히 일치하지 않으면 틀린 단어 */
+        var re = /[A-Za-z]+(?:'[A-Za-z]+)?/g, mm;
+        while ((mm = re.exec(s)) !== null) {
+          var raw = mm[0], wl = raw.toLowerCase();
+          var check = wl;
+          if (check === "it's") check = 'it';
+          else if (check.slice(-2) === "'s") check = check.slice(0, check.length - 2);
+          if (check.length < 2) continue;
+          if (KNOWN_WORDS[check]) continue;
+          if (seenWord[wl]) continue;
+          seenWord[wl] = true;
+          words.push({ wrong: raw, wrongLower: wl, correct: nearestKnownWord(wl) });
+        }
+      });
+      return { format: format, words: words, total: format.length + words.length };
+    }
+    /* 눌러서 넣기와 눌러서 고치기는 두지 않는다. 학생이 보고 직접 타이핑한다.
+       피드백 문장은 길게 잇지 않고, 항목마다 한 줄씩 짧게 보여 준다. */
+    function renderSpellFeedback() {
+      var box = $('spellFeedback');
+      if (!box) return;
+      var m = state.map;
+      /* 타이핑하는 도중에는 피드백을 띄우지 않는다.
+         타이핑을 멈추고 2초가 지나거나 입력 칸을 벗어나면 다시 그려지며 나타난다. */
+      if (spellTyping) { box.innerHTML = ''; box.style.display = 'none'; return; }
+      var text = (m.text || '').trim();
+      box.innerHTML = '';
+      if (!text) { box.style.display = 'none'; return; }
+      var chk = analyzeSentences(m.text);
+      box.style.display = 'block';
+      if (!chk.total) {
+        box.className = 'spell-box ok';
+        box.appendChild(el('div', 'spell-title', '✓ 문장 확인: 좋아요'));
+        box.appendChild(el('p', 'spell-line', '모든 문장이 대문자로 시작하고 마침표로 끝나요.'));
+        var okMsg2 = el('p', 'spell-line', '오늘 배운 단어로 바르게 쓴, 완성된 문장이에요.');
+        okMsg2.style.margin = '0';
+        box.appendChild(okMsg2);
+        return;
+      }
+      if (m.diff === 'hard') {
+        /* 도전: 바른 단어를 어디에도 쓰지 않는다. 틀린 단어에 밑줄만 그어 알려 준다.
+           안내도 한 문장씩 줄을 나눠 짧게 보여 준다. */
+        box.className = 'spell-box warn';
+        box.appendChild(el('div', 'spell-title', '문장 확인'));
+        box.appendChild(el('p', 'spell-line', '틀린 곳이 있어요.'));
+        if (chk.words.length) box.appendChild(el('p', 'spell-line', '밑줄 친 단어는 오늘 배운 단어가 아니에요.'));
+        var hasCapPer = chk.format.some(function (f) { return f.kind === 'capital' || f.kind === 'period' || f.kind === 'grammar'; });
+        var hasStruct = chk.format.some(function (f) { return f.kind === 'structure'; });
+        if (hasCapPer) box.appendChild(el('p', 'spell-line', '대문자로 시작했는지, 마침표로 끝났는지도 확인해요.'));
+        if (hasStruct) box.appendChild(el('p', 'spell-line', '문장이 끝까지 완성됐는지도 확인해요.'));
+        box.appendChild(el('p', 'spell-line soft', '바른 단어는 보여주지 않아요. 스스로 생각해서 고쳐 보세요.'));
+        var badSet = {};
+        chk.words.forEach(function (it) { badSet[it.wrongLower] = true; });
+        var prev = el('div', 'spell-preview');
+        var raw = m.text || '';
+        var re = /[A-Za-z]+(?:'[A-Za-z]+)?/g, last = 0, mm;
+        while ((mm = re.exec(raw)) !== null) {
+          if (mm.index > last) prev.appendChild(document.createTextNode(raw.slice(last, mm.index)));
+          var w = mm[0];
+          if (badSet[w.toLowerCase()]) prev.appendChild(el('span', 'spell-bad', w));
+          else prev.appendChild(document.createTextNode(w));
+          last = mm.index + w.length;
+        }
+        if (last < raw.length) prev.appendChild(document.createTextNode(raw.slice(last)));
+        box.appendChild(prev);
+        return;
+      }
+      /* 쉬움·보통: 무엇이 틀렸는지와 바른 단어를 보여만 준다. 고치는 것은 학생이 직접 타이핑한다.
+         'N번 문장:' 항목은 하나씩 줄을 나눠 한 줄에 하나만 보여 준다. */
+      box.className = 'spell-box warn';
+      box.appendChild(el('div', 'spell-title', '문장 확인'));
+      chk.format.forEach(function (f) { box.appendChild(el('p', 'spell-line', f.msg)); });
+      chk.words.forEach(function (it) {
+        if (!it.correct) box.appendChild(el('p', 'spell-line', '「' + it.wrong + '」은(는) 오늘 배운 단어가 아니에요.'));
+      });
+      var suggest = chk.words.filter(function (it) { return !!it.correct; });
+      if (suggest.length) {
+        box.appendChild(el('p', 'spell-line soft', '바른 단어는 아래와 같아요. 보고 직접 고쳐 써 보세요.'));
+        var row = el('div', 'spell-suggests');
+        suggest.forEach(function (it) {
+          row.appendChild(el('span', 'spell-suggest', it.wrong + ' → ' + it.correct));
+        });
+        box.appendChild(row);
+      }
+    }
+
+    function placeKo(en) {
+      for (var i = 0; i < PLACE_KEYS.length; i++) {
+        if (PLACES[PLACE_KEYS[i]].en === en) return PLACES[PLACE_KEYS[i]].ko;
+      }
+      return en;
+    }
+    /* 문장 한국어 해석 (걸어보기 표시용) */
+    function translateCmd(c) {
+      if (c.type === 'go') return c.n === Infinity ? '막힐 때까지 곧장 가요' : '곧장 ' + c.n + '블록 가요';
+      if (c.type === 'turn') return (c.side === 'left' ? '왼쪽' : '오른쪽') + '으로 돌아요';
+      return '';
+    }
+    function translateSentence(p) {
+      if (p.kind === 'move') return translateCmd(p);
+      if (p.kind === 'seq') return p.cmds.map(translateCmd).join(', 그리고 ');
+      if (p.kind === 'loc') {
+        if (p.loc === 'side') return '보물은 ' + (p.side === 'left' ? '왼쪽' : '오른쪽') + '에 있어요';
+        if (p.loc === 'nextto') return '보물은 ' + (p.place ? placeKo(p.place) : p.placeRaw) + ' 옆에 있어요';
+      }
+      return '길 안내로 읽기 어려운 문장이에요';
+    }
+
+    /* ---------------- 체크리스트 ---------------- */
+    function computeChecklist(m) {
+      var diff = DIFFS[m.diff];
+      var sim = simulate(m, m.text);
+      var unknownIdx = [];
+      sim.parsed.forEach(function (p, i) { if (p.kind === 'unknown') unknownIdx.push(i + 1); });
+      var unknownPlace = false;
+      sim.parsed.forEach(function (p) {
+        if (p.kind === 'loc' && p.loc === 'nextto' && !p.place) unknownPlace = true;
+      });
+      var missingMention = [];
+      sim.mentioned.forEach(function (nm) {
+        if (findPlace(m, nm).length === 0 && missingMention.indexOf(nm) === -1) missingMention.push(nm);
+      });
+      var sentChk = analyzeSentences(m.text);
+      var reveal = /(treasure|보물)[^.!?]*\b(is|in|at|on|next to)\b/i.test(m.text) ||
+                   /\b(is|in|at)\s+(the\s+)?(treasure|보물)/i.test(m.text);
+      /* next to 문장의 장소가 정말 보물 옆 칸인지 */
+      var sideLocBad = [];
+      sim.locChecks.forEach(function (lc) {
+        var p = sim.parsed[lc.si];
+        if (p && p.loc === 'nextto' && !lc.ok) sideLocBad.push(lc.si + 1);
+      });
+      var hasSideLoc = sim.parsed.some(function (p) {
+        return p.kind === 'loc' && p.loc === 'nextto';
+      });
+      var items = [];
+      items.push({ id: 'treasure', label: '보물을 숨겼어요', ok: !!m.treasure,
+        hint: m.treasure ? '' : '2단계에서 보물을 골라 지도 칸을 눌러 숨겨요.' });
+      items.push({ id: 'arrive', label: '안내문대로 걸으면 보물에 정확히 도착해요', ok: sim.arrived,
+        hint: sim.arrived ? '' : (!m.treasure ? '보물을 먼저 숨겨야 확인할 수 있어요.'
+          : (sim.sentences.length === 0 ? '안내문을 쓰면 자동으로 확인해요.'
+          : (!sim.adjacent ? '걸어 보기로 어디까지 가는지 확인해 보세요.'
+          : '마지막 위치 문장(왼쪽/오른쪽/옆)이 실제와 달라요.'))) });
+      items.push({ id: 'count', label: '길 안내 문장 수 ' + Math.min(sim.dirCount, diff.minSent) + ' / ' + diff.minSent + '문장 (' + diff.ko + ')', ok: sim.dirCount >= diff.minSent,
+        hint: sim.dirCount >= diff.minSent ? '' : '길 안내 문장이 ' + (diff.minSent - sim.dirCount) + '개 더 필요해요. (인사말 같은 문장은 세지 않아요)' });
+      var diffLabel, diffOk, diffHint;
+      if (m.diff === 'easy') { diffLabel = '쉬움: 추가 조건이 없어요'; diffOk = true; diffHint = ''; }
+      else if (m.diff === 'normal') {
+        diffLabel = "보통: It's next to the ___ . 문장 쓰기"; diffOk = sim.hasNextTo;
+        diffHint = diffOk ? '' : '문장 틀을 보고 next to 문장을 직접 써 보세요.';
+      } else {
+        diffLabel = "도전: It's next to the ___ . 문장 쓰기"; diffOk = sim.hasNextTo;
+        diffHint = diffOk ? '' : '문장 틀을 보고 next to 문장을 직접 써 보세요.';
+      }
+      items.push({ id: 'diff', label: diffLabel, ok: diffOk, hint: diffHint });
+      var spellHint;
+      if (m.diff === 'hard') {
+        /* 도전에서는 체크리스트에서도 바른 단어를 보여주지 않는다 */
+        spellHint = sentChk.total ? '틀린 곳이 있어요. 아래 안내문에서 밑줄 친 단어와 문장의 처음·끝을 확인하고 스스로 고쳐 보세요.' : '';
+      } else if (sentChk.total) {
+        var hintParts = [];
+        sentChk.format.forEach(function (f) { hintParts.push(f.msg); });
+        sentChk.words.forEach(function (it) {
+          hintParts.push(it.correct ? (it.wrong + ' → ' + it.correct + ' 로 고쳐 보세요') : ('「' + it.wrong + '」은(는) 배운 단어가 아니에요'));
+        });
+        /* 항목마다 줄바꿈해 한 줄에 하나씩 보이게 한다 (.hint의 white-space:pre-line) */
+        spellHint = hintParts.join('\n');
+      } else spellHint = '';
+      items.push({ id: 'spell', label: '문장 확인 (대문자·마침표·배운 단어·완성된 문장)', ok: sentChk.total === 0,
+        hint: spellHint });
+      var namesOk = !unknownPlace && missingMention.length === 0 && unknownIdx.length === 0;
+      var secretOk = !reveal && sideLocBad.length === 0 && (!diff.needNextTo || hasSideLoc);
+      items.push({ id: 'secret', label: '장소 이름이 지도와 맞고, 보물 위치를 직접 말하지 않았어요', ok: namesOk && secretOk,
+        hint: !namesOk ? (unknownIdx.length ? unknownIdx.join(', ') + '번 문장은 걷기에서 이해할 수 없어요. 문장 도움의 틀을 보고 직접 써 보세요.'
+              : (missingMention.length ? missingMention.join(', ') + ' — 지도에 없는 장소예요.' : '영어 장소 이름을 바르게 썼는지 확인해요.'))
+            : (reveal ? '보물 위치를 직접 말하면 퀴즈가 너무 쉬워져요. 그 문장을 지워요.'
+              : (sideLocBad.length ? sideLocBad.join(', ') + '번 문장: next to의 장소는 보물 바로 옆 칸에 있어야 해요.'
+              : (diff.needNextTo && !hasSideLoc ? 'next to 문장으로 보물 옆 장소를 알려 주세요.' : ''))) });
+      return { items: items, sim: sim, allOk: items.every(function (x) { return x.ok; }) };
+    }
+    /* ============================================================
+       지도 렌더링 + 캐릭터
+       ============================================================ */
+    function buildGrid(gridEl, m, opts) {
+      gridEl.innerHTML = '';
+      for (var r = 0; r < SIZE; r++) {
+        for (var c = 0; c < SIZE; c++) {
+          (function (r, c) {
+            var cell = el('button', 'cell');
+            cell.type = 'button';
+            cell.dataset.r = r; cell.dataset.c = c;
+            var pk = m.places[key(r, c)];
+            var isStart = m.start.r === r && m.start.c === c;
+            var isTreasure = m.treasure && m.treasure.r === r && m.treasure.c === c;
+            if (pk && PLACES[pk]) {
+              var P = PLACES[pk];
+              cell.style.background = P.color;
+              cell.appendChild(svgUse(P.icon, 'cell-icon'));
+              var nm = el('span', 'cell-name', P.en);
+              cell.appendChild(nm);
+              cell.title = P.en + ' (' + P.ko + ')';
+            } else if (isStart) {
+              cell.classList.add('start-cell');
+              var lab = el('span', 'start-label', 'START');
+              var arr = el('span', 'start-arrow', '▲');
+              arr.style.display = 'inline-block';
+              arr.style.transform = 'rotate(' + DIRS[startDir(m)].arrow + 'deg)';
+              cell.appendChild(lab); cell.appendChild(arr);
+            } else if (isTreasure && opts.showTreasure) {
+              cell.classList.add('treasure-cell');
+              cell.appendChild(svgUse((TREASURES[m.treasure.kind] || TREASURES.chest).icon, 'cell-icon'));
+              cell.appendChild(el('span', 'hidden-label', 'HIDDEN'));
+            }
+            if (opts.onCell) {
+              cell.classList.add('road-cell');
+              cell.addEventListener('click', function () { opts.onCell(r, c, cell); });
+            }
+            gridEl.appendChild(cell);
+          })(r, c);
+        }
+      }
+    }
+    function setWalker(wrap, walkerEl, iconEl, arrowEl, charKey, pos) {
+      /* 한 칸의 실제 크기(격자 여백·간격 포함)에 맞춰 마커를 칸 정중앙에 놓는다 */
+      walkerEl.style.left = 'calc(4px + ' + pos.c + ' * ((100% - 32px) / 7 + 4px))';
+      walkerEl.style.top = 'calc(4px + ' + pos.r + ' * ((100% - 32px) / 7 + 4px))';
+      iconEl.innerHTML = '';
+      iconEl.appendChild(svgUse(CHARS[charKey].icon));
+      /* 바라보는 방향: 화살표만 따로 돌리지 않고, 캐릭터와 화살표가 들어 있는
+         원(.walker-inner) 전체를 그 방향만큼 돌린다. 그래서 캐릭터 자체가
+         화살표와 함께 같은 방향을 바라보고, 회전축이 원의 정중앙이라
+         돌아도 캐릭터가 가운데에서 벗어나지 않는다. */
+      var a = DIRS[pos.dir].arrow;
+      var inner = iconEl.parentNode;
+      if (inner) inner.style.transform = 'rotate(' + a + 'deg)';
+      arrowEl.style.left = '50%'; arrowEl.style.top = '-11px';
+      arrowEl.style.transform = 'translateX(-50%)';
+      walkerEl.dataset.dir = pos.dir;
+    }
+    function setCompass(needleEl, textEl, dir) {
+      needleEl.style.transform = 'translateX(-50%) rotate(' + DIRS[dir].arrow + 'deg)';
+      needleEl.style.transformOrigin = '50% 100%';
+      needleEl.style.left = '50%'; needleEl.style.bottom = '50%';
+      textEl.textContent = '바라보는 방향: ' + DIRS[dir].ko;
+    }
+
+    /* 걷기 재생기: 프레임 배열을 차례로 보여 준다 */
+    function playFrames(frames, hooks) {
+      var i = 0, timer = null, stopped = false;
+      function step() {
+        if (stopped) return;
+        if (i >= frames.length) { if (hooks.onDone) hooks.onDone(); return; }
+        var f = frames[i];
+        hooks.onFrame(f, i);
+        var delay = f.ev === 'step' ? 360 : (f.ev === 'turn' ? 430 : 300);
+        i++;
+        timer = setTimeout(step, delay);
+      }
+      step();
+      return { stop: function () { stopped = true; clearTimeout(timer); } };
+    }
+
+    /* ============================================================
+       입장 화면
+       ============================================================ */
+    function renderClassChips(container, selected, onPick) {
+      container.innerHTML = '';
+      [1, 2, 3, 4, 5].forEach(function (n) {
+        var b = el('button', 'class-chip' + (selected === '5-' + n ? ' selected' : ''), '5-' + n);
+        b.type = 'button';
+        b.addEventListener('click', function () { SFX.click(); onPick('5-' + n); });
+        container.appendChild(b);
+      });
+    }
+    function renderCharRow(container, selected, onPick) {
+      container.innerHTML = '';
+      Object.keys(CHARS).forEach(function (k) {
+        var b = el('button', 'char-chip' + (selected === k ? ' selected' : ''));
+        b.type = 'button';
+        b.appendChild(svgUse(CHARS[k].icon));
+        b.appendChild(el('span', null, CHARS[k].ko));
+        b.addEventListener('click', function () { SFX.click(); onPick(k); });
+        container.appendChild(b);
+      });
+    }
+    function renderNumGrid(container, selected, onPick) {
+      container.innerHTML = '';
+      for (var n = 1; n <= CLASS_SIZE; n++) {
+        (function (n) {
+          var b = el('button', 'num-chip' + (selected === n ? ' selected' : ''), String(n));
+          b.type = 'button';
+          b.setAttribute('aria-label', n + '번');
+          b.addEventListener('click', function () { SFX.click(); onPick(n); });
+          container.appendChild(b);
+        })(n);
+      }
+    }
+    function refreshEntry() {
+      renderClassChips($('classChips'), state.cls, function (v) { state.cls = v; refreshEntry(); });
+      renderNumGrid($('numGrid'), state.num, function (v) { state.num = v; refreshEntry(); });
+      renderCharRow($('charRow'), state.char, function (v) { state.char = v; refreshEntry(); });
+    }
+    $('nameInput').addEventListener('input', function () { state.name = this.value.trim(); });
+    function beginSession() {
+      state.map = freshMap();
+      state.step = 1;
+      sessionStarted = true;
+      lastDraftSignature = null;
+      suppressDraftSignature = null;
+      registerPresence();
+      enterMaker();
+      updateDraftStatus(false);
+    }
+    /* 저장본으로 이어서 시작하기: 지도 전체와 멈췄던 단계를 그대로 되살린다 */
+    function resumeFromDraft(draft) {
+      var m = mapFromServer(draft.map || {});
+      state.map = m;
+      state.cls = m.cls || state.cls;
+      state.num = m.makerNum || state.num;
+      state.name = m.makerName || state.name;
+      state.char = m.char || state.char;
+      if (m.treasure && m.treasure.kind) state.selTreasureKind = m.treasure.kind;
+      var st = parseInt(draft.step, 10);
+      state.step = (st >= 1 && st <= 4) ? st : 1;
+      sessionStarted = true;
+      knownDraftName = state.name;
+      suppressDraftSignature = null;
+      registerPresence();
+      enterMaker();
+      lastDraftSignature = draftSignature();
+      updateDraftStatus(true);
+      toast('만들던 지도예요. 저장한 단계부터 이어서 만들어요!');
+    }
+    function openResumeModal(draft) {
+      pendingDraft = draft;
+      var m = draft.map || {};
+      var stepName = '1단계';
+      STEPS.forEach(function (st) { if (st.n === (draft.step || 1)) stepName = st.n + '단계 · ' + st.t; });
+      var when = draft.updatedAt ? formatSubmittedAt(draft.updatedAt) : '';
+      var cnt = Object.keys(m.places || {}).length;
+      $('resumeText').textContent = state.cls + ' ' + state.num + '번 ' + state.name + ' 친구가 만들던 지도예요. ' +
+        stepName + '까지 만들었어요. (장소 ' + cnt + '개' + (m.treasure ? ' · 보물 숨김' : '') +
+        ((m.text || '').trim() ? ' · 안내문 쓰는 중' : '') + (when ? ' · ' + when + ' 저장' : '') + ') ' +
+        '이어서 만들까요, 새로 만들까요? 새로 만들면 만들던 지도는 지워져요.';
+      $('resumeModal').classList.add('open');
+    }
+    $('resumeContinueBtn').addEventListener('click', function () {
+      $('resumeModal').classList.remove('open');
+      var d = pendingDraft; pendingDraft = null;
+      if (d) resumeFromDraft(d); else beginSession();
+    });
+    $('resumeNewBtn').addEventListener('click', function () {
+      $('resumeModal').classList.remove('open');
+      pendingDraft = null;
+      knownDraftName = null;
+      lastDraftSignature = null;
+      deleteDraftNode(state.cls, state.num);
+      beginSession();
+    });
+    $('startBtn').addEventListener('click', function () {
+      state.name = $('nameInput').value.trim();
+      if (!state.cls) { toast('우리 반을 먼저 골라 주세요.'); return; }
+      if (!state.num) { toast('내 번호를 골라 주세요.'); return; }
+      if (!state.name) { toast('이름을 써 주세요.'); $('nameInput').focus(); return; }
+      if (!FB.ready) { beginSession(); return; }
+      /* 반·번호·이름으로 저장본(이어서 하기)과 기존 입장 기록을 먼저 확인한다 */
+      var btn = $('startBtn');
+      var oldLabel = btn.textContent;
+      btn.disabled = true; btn.textContent = '확인 중…';
+      var cls = state.cls, num = String(state.num), myName = state.name;
+      function restoreBtn() { btn.disabled = false; btn.textContent = oldLabel; }
+      Promise.all([
+        studentsRef(cls).child(num).once('value'),
+        draftsRef(cls).child(num).once('value')
+      ]).then(function (snaps) {
+        restoreBtn();
+        var cur = snaps[0].val();
+        var draft = snaps[1].val();
+        var otherName = null;
+        if (cur && cur.name && cur.name !== myName) otherName = cur.name;
+        if (draft && draft.name && draft.name !== myName && !otherName) otherName = draft.name;
+        var ownDraft = (draft && draft.name === myName) ? draft : null;
+        if (otherName) {
+          /* 같은 번호가 다른 이름으로 쓰이고 있으면 한 번 확인한다.
+             이어서 하기는 제안하지 않고, 확인하면 예전 저장본은 지우고 새로 시작한다. */
+          openConfirm('이미 있는 번호예요',
+            cls + ' ' + num + '번은 이미 "' + otherName + '" 이름으로 들어와 있어요. 내가 ' + num + '번 ' + myName + '이(가) 맞아요?',
+            '네, 제가 맞아요', function () {
+              knownDraftName = null;
+              lastDraftSignature = null;
+              if (draft) deleteDraftNode(cls, num);
+              beginSession();
+            });
+          return;
+        }
+        if (ownDraft && draftHasContent(ownDraft)) {
+          knownDraftName = myName;
+          openResumeModal(ownDraft);
+          return;
+        }
+        knownDraftName = ownDraft ? myName : null;
+        beginSession();
+      }).catch(function () { restoreBtn(); beginSession(); });
+    });
+    /* 서버 연결 설정 */
+    $('fbSetupBtn').addEventListener('click', function () {
+      $('fbSetupMsg').textContent = FB.ready ? '지금 이 기기는 제출함 서버에 연결되어 있어요.' : '';
+      $('fbModal').classList.add('open');
+    });
+    $('fbCloseBtn').addEventListener('click', function () { $('fbModal').classList.remove('open'); });
+    $('fbConnectBtn').addEventListener('click', function () {
+      var cfg = parseFirebaseConfig($('fbConfigInput').value);
+      if (!cfg) { $('fbSetupMsg').textContent = '설정값을 읽을 수 없어요. firebaseConfig 전체를 붙여 넣었는지 확인해 주세요.'; return; }
+      if (initFirebase(cfg)) {
+        $('fbSetupMsg').textContent = '연결됐어요! 이제 제출, 친구 지도, 선생님 제출 확인을 쓸 수 있어요.';
+        toast('제출함 서버에 연결됐어요.');
+        if (teacherState.cls) watchTeacherClass(teacherState.cls);
+      } else {
+        $('fbSetupMsg').textContent = '연결에 실패했어요. 설정값과 Realtime Database 주소를 확인해 주세요.';
+      }
+    });
+
+    /* 반·이름 바꾸기 모달 */
+    var whoDraft = { cls: null, num: null, char: 'bear' };
+    function openWho() {
+      whoDraft.cls = state.cls; whoDraft.num = state.num; whoDraft.char = state.char;
+      $('whoNameInput').value = state.name;
+      renderWhoModal();
+      $('whoModal').classList.add('open');
+    }
+    function renderWhoModal() {
+      renderClassChips($('whoClassChips'), whoDraft.cls, function (v) { whoDraft.cls = v; renderWhoModal(); });
+      renderNumGrid($('whoNumGrid'), whoDraft.num, function (v) { whoDraft.num = v; renderWhoModal(); });
+      renderCharRow($('whoCharRow'), whoDraft.char, function (v) { whoDraft.char = v; renderWhoModal(); });
+    }
+    $('editWhoBtn').addEventListener('click', openWho);
+    $('whoCloseBtn').addEventListener('click', function () { $('whoModal').classList.remove('open'); });
+    $('whoSaveBtn').addEventListener('click', function () {
+      var nm = $('whoNameInput').value.trim();
+      if (!whoDraft.cls) { toast('반을 골라 주세요.'); return; }
+      if (!whoDraft.num) { toast('번호를 골라 주세요.'); return; }
+      if (!nm) { toast('이름을 써 주세요.'); return; }
+      var oldCls = state.cls, oldNum = state.num;
+      state.cls = whoDraft.cls; state.num = whoDraft.num; state.name = nm; state.char = whoDraft.char;
+      state.map.cls = state.cls; state.map.makerNum = state.num; state.map.makerName = state.name; state.map.char = state.char;
+      $('whoModal').classList.remove('open');
+      SFX.pop();
+      registerPresence();
+      /* 반·번호가 바뀌면 저장본도 새 반·번호 칸으로 옮긴다 (옛 칸의 저장본은 지운다) */
+      if (FB.ready && sessionStarted && oldCls && oldNum && (oldCls !== state.cls || String(oldNum) !== String(state.num))) {
+        deleteDraftNode(oldCls, oldNum);
+        knownDraftName = state.name;
+        lastDraftSignature = null;
+        scheduleDraftSave();
+      }
+      refreshMakerHeads(); renderMakeGrid(); refreshPanel();
+      toast('반, 번호, 이름을 바꿨어요.');
+    });
+
+    /* ============================================================
+       만들기 화면
+       ============================================================ */
+    var walkPlayer = null;
+    var makerWalkerPos = null;
+    /* 문장 확인 피드백 표시 시점: 타이핑 중에는 숨기고, 타이핑을 멈춘 지
+       2초가 지나면 보여 준다. 입력 칸을 벗어나면(blur) 기다리지 않고 바로 보여 준다. */
+    var spellTyping = false;
+    var spellIdleTimer = null;
+    function makerHomePos() { return { r: state.map.start.r, c: state.map.start.c, dir: startDir(state.map) }; }
+    function refreshMakerHeads() {
+      $('whoText').textContent = (state.cls || '') + ' ' + (state.num ? state.num + '번 ' : '') + state.name;
+      $('whoAvatar').innerHTML = ''; $('whoAvatar').appendChild(svgUse(CHARS[state.char].icon));
+      $('mapTitle').textContent = state.map.title ? state.map.title : '내 마을 지도';
+      $('mapMeta').textContent = (state.map.cls || '') + ' · ' + (state.map.makerNum ? state.map.makerNum + '번 ' : '') + state.map.makerName + ' · ' + DIFFS[state.map.diff].ko;
+      var pos = makerWalkerPos || makerHomePos();
+      setCompass($('compassNeedle'), $('compassText'), pos.dir);
+    }
+    function renderMakeGrid() {
+      buildGrid($('makeGrid'), state.map, {
+        showTreasure: true,
+        onCell: onMakeCell
+      });
+      makerWalkerPos = makerHomePos();
+      setWalker($('makeGridWrap'), $('makeWalker'), $('makeWalkerIcon'), $('makeWalkerArrow'), state.map.char, makerWalkerPos);
+      refreshMakerHeads();
+    }
+    function enterMaker() {
+      showScreen('screen-make');
+      renderStepbar(); renderMakeGrid(); refreshPanel();
+    }
+    var STEPS = [
+      { n: 1, t: '지도 꾸미기', s: '출발점 정하기' },
+      { n: 2, t: '보물 숨기기', s: '보물 고르고 숨기기' },
+      { n: 3, t: '장소 놓기', s: '마을 꾸미기' },
+      { n: 4, t: '길 안내 쓰기', s: '영어로 쓰고 확인하기' }
+    ];
+    function stepDone(n) {
+      var m = state.map;
+      if (n === 1) return true;
+      if (n === 2) return !!m.treasure;
+      if (n === 3) return computeGates(m).all;
+      return computeChecklist(m).allOk;
+    }
+    function renderStepbar() {
+      var bar = $('stepbar'); bar.innerHTML = '';
+      STEPS.forEach(function (st) {
+        var b = el('button', 'step-tab' + (state.step === st.n ? ' current' : '') + (stepDone(st.n) && state.step !== st.n ? ' done' : ''));
+        b.type = 'button';
+        var nspan = el('span', 'n', stepDone(st.n) && state.step !== st.n ? '✓' : String(st.n));
+        var tspan = el('span', 't', st.t);
+        tspan.appendChild(el('small', null, st.s));
+        b.appendChild(nspan); b.appendChild(tspan);
+        b.addEventListener('click', function () {
+          SFX.click(); state.step = st.n; stopWalk();
+          renderStepbar(); refreshPanel(); updateMakeHint();
+          scheduleDraftSave();
+        });
+        bar.appendChild(b);
+      });
+      $('makerHelper').style.display = state.step === 4 ? 'block' : 'none';
+      if (state.step === 4) updateMakerAround();
+      updateMakeHint();
+    }
+    function updateMakeHint() {
+      var hints = {
+        1: '지도 칸을 눌러 출발점(START)을 옮기고, 옆 패널에서 처음에 바라보는 방향도 골라요. 지도 밖을 바라보는 방향은 고를 수 없어요.',
+        2: '숨길 보물을 고르고, 지도에서 숨기고 싶은 길 칸을 눌러요. 보물 칸은 지나갈 수 없어요.',
+        3: '장소를 골라 지도 칸을 눌러 놓아요. 장소 칸은 지나갈 수 없어서 길을 만들 수 있어요. 놓은 장소를 다시 누르면 지워져요.',
+        4: '오른쪽에서 난이도를 고르고, 문장 도움을 보고 직접 써서 길 안내문을 완성해요. 아래 방향 도우미로 캐릭터를 직접 움직여 볼 수도 있어요.'
+      };
+      $('makeMapHint').textContent = hints[state.step];
+    }
+    function onMakeCell(r, c) {
+      var m = state.map;
+      stopWalk();
+      if (state.step === 1) {
+        if (m.places[key(r, c)]) { toast('장소가 있는 칸에는 출발점을 놓을 수 없어요.'); return; }
+        if (m.treasure && m.treasure.r === r && m.treasure.c === c) { toast('보물이 있는 칸에는 출발점을 놓을 수 없어요.'); return; }
+        m.start = { r: r, c: c };
+        /* 출발점을 옮겼더니 전에 고른 방향이 지도 밖을 보게 되면 그 선택은 버린다 */
+        if (typeof m.startDir === 'number' && dirFacesOutside(m, m.startDir)) delete m.startDir;
+        SFX.place(); renderMakeGrid(); refreshPanel();
+        toast('출발점을 옮겼어요. ' + DIRS[startDir(m)].ko + '을 보고 출발해요.');
+      } else if (state.step === 2) {
+        if (m.start.r === r && m.start.c === c) { toast('출발점에는 보물을 숨길 수 없어요.'); return; }
+        if (m.places[key(r, c)]) { toast('장소가 있는 칸이에요. 빈 칸에 숨겨요.'); return; }
+        if (m.treasure && m.treasure.r === r && m.treasure.c === c) {
+          m.treasure = null; SFX.pop(); renderMakeGrid(); refreshPanel(); renderStepbar();
+          toast('보물을 다시 숨길 수 있어요.');
+          return;
+        }
+        m.treasure = { r: r, c: c, kind: state.selTreasureKind };
+        SFX.place(); renderMakeGrid(); refreshPanel(); renderStepbar();
+      } else if (state.step === 3) {
+        if (m.start.r === r && m.start.c === c) { toast('출발점에는 장소를 놓을 수 없어요.'); return; }
+        if (m.treasure && m.treasure.r === r && m.treasure.c === c) { toast('보물이 숨은 칸이에요.'); return; }
+        if (m.places[key(r, c)]) {
+          delete m.places[key(r, c)]; SFX.pop(); renderMakeGrid(); refreshPanel(); renderStepbar();
+          toast('장소를 지웠어요.');
+          return;
+        }
+        if (state.selPlace === 'erase') return;
+        m.places[key(r, c)] = state.selPlace;
+        SFX.place(); renderMakeGrid(); refreshPanel(); renderStepbar();
+      } else {
+        toast('안내문을 쓰는 중에는 지도를 바꿀 수 없어요. 위 단계 버튼으로 돌아가세요.');
+      }
+      scheduleDraftSave();
+    }
+
+    /* ------------ 옆 패널 ------------ */
+    function refreshPanel() {
+      var p = $('sidePanel'); p.innerHTML = '';
+      if (state.step === 1) panelStart(p);
+      else if (state.step === 2) panelTreasure(p);
+      else if (state.step === 3) panelPlaces(p);
+      else panelWrite(p);
+      refreshMakerHeads();
+    }
+    function panelStart(p) {
+      p.appendChild(el('h2', 'font-display', '1단계 · 지도 꾸미기'));
+      var d = el('p', 'desc');
+      d.innerHTML = '지도 칸을 눌러 <b>출발점(START)</b>을 옮기고, 아래 버튼으로 <b>처음에 바라보는 방향</b>도 골라요.<br />지도 밖을 바라보는 방향은 고를 수 없어요.';
+      p.appendChild(d);
+      var curDir = startDir(state.map);
+      var d2 = el('p', 'desc');
+      d2.innerHTML = '지금 출발점은 <b>' + DIRS[curDir].ko + '</b>을 보고 있어요.';
+      p.appendChild(d2);
+      var dirRow = el('div', 'place-tabs');
+      var dirArrows = ['↑', '→', '↓', '←'];
+      [0, 1, 2, 3].forEach(function (dir) {
+        var b = el('button', 'place-tab' + (curDir === dir ? ' selected' : ''), dirArrows[dir] + ' ' + DIRS[dir].ko);
+        b.type = 'button';
+        if (dirFacesOutside(state.map, dir)) {
+          b.disabled = true; b.style.opacity = '.4';
+          b.title = '지도 밖을 바라보며 출발할 수는 없어요.';
+        }
+        b.addEventListener('click', function () {
+          if (dirFacesOutside(state.map, dir)) { toast('지도 밖을 바라보며 출발할 수는 없어요.'); return; }
+          state.map.startDir = dir; SFX.click();
+          renderMakeGrid(); refreshPanel();
+          toast(DIRS[dir].ko + '을 보고 출발해요.');
+        });
+        dirRow.appendChild(b);
+      });
+      p.appendChild(dirRow);
+      var b = el('button', 'btn coral', '다음: 보물 숨기기'); b.type = 'button';
+      b.style.width = '100%';
+      b.addEventListener('click', function () { state.step = 2; renderStepbar(); refreshPanel(); });
+      p.appendChild(b);
+    }
+    function panelTreasure(p) {
+      p.appendChild(el('h2', 'font-display', '2단계 · 보물 숨기기'));
+      var d = el('p', 'desc');
+      d.innerHTML = '숨길 보물을 고르고, 지도에서 <b>숨기고 싶은 칸</b>을 눌러요.<br />보물을 숨긴 칸을 다시 누르면 보물을 뺄 수 있어요.';
+      p.appendChild(d);
+      var row = el('div', 'treasure-row');
+      Object.keys(TREASURES).forEach(function (k) {
+        var b = el('button', 'pick-chip' + (state.selTreasureKind === k ? ' selected' : ''));
+        b.type = 'button';
+        b.appendChild(svgUse(TREASURES[k].icon));
+        b.appendChild(el('span', null, TREASURES[k].ko));
+        b.addEventListener('click', function () {
+          state.selTreasureKind = k; SFX.click();
+          if (state.map.treasure) state.map.treasure.kind = k;
+          renderMakeGrid(); refreshPanel();
+        });
+        row.appendChild(b);
+      });
+      p.appendChild(row);
+      var st = el('p', 'desc', state.map.treasure ? '보물을 숨겼어요! 이제 마을을 꾸며요.' : '아직 보물을 숨기지 않았어요.');
+      st.style.marginTop = '14px';
+      p.appendChild(st);
+      var b2 = el('button', 'btn coral', '다음: 장소 놓기'); b2.type = 'button';
+      b2.disabled = !state.map.treasure;
+      b2.addEventListener('click', function () { state.step = 3; renderStepbar(); refreshPanel(); });
+      p.appendChild(b2);
+    }
+    function panelPlaces(p) {
+      p.appendChild(el('h2', 'font-display', '3단계 · 장소 놓기'));
+      var gates = computeGates(state.map);
+      var d = el('p', 'desc');
+      d.innerHTML = '탭에서 장소를 고르고 지도 칸을 눌러 놓아요. 장소 칸은 <b>지나갈 수 없어서</b> 길을 만들 수 있어요. 놓은 장소를 <b>다시 누르면 지워져요</b>.';
+      p.appendChild(d);
+      var tabs = el('div', 'place-tabs');
+      PLACE_CATS.forEach(function (cat) {
+        var b = el('button', 'place-tab' + (state.placeTab === cat.id ? ' selected' : ''), cat.ko);
+        b.type = 'button';
+        b.addEventListener('click', function () { state.placeTab = cat.id; SFX.click(); refreshPanel(); });
+        tabs.appendChild(b);
+      });
+      p.appendChild(tabs);
+      var grid = el('div', 'place-grid');
+      PLACE_KEYS.filter(function (k) { return PLACES[k].cat === state.placeTab && !PLACES[k].hidden; }).forEach(function (k) {
+        var P = PLACES[k];
+        var b = el('button', 'place-chip' + (state.selPlace === k ? ' selected' : ''));
+        b.type = 'button'; b.style.background = P.color;
+        b.appendChild(svgUse(P.icon));
+        b.appendChild(el('span', null, P.en));
+        b.appendChild(el('span', 'ko', P.ko));
+        b.addEventListener('click', function () { state.selPlace = k; SFX.click(); refreshPanel(); });
+        grid.appendChild(b);
+      });
+      p.appendChild(grid);
+      var tools = el('div', 'tool-row');
+      var er = el('button', 'btn small ghost', '지우개'); er.type = 'button';
+      if (state.selPlace === 'erase') { er.style.borderColor = 'var(--red)'; er.style.color = 'var(--red)'; }
+      er.addEventListener('click', function () { state.selPlace = 'erase'; SFX.click(); refreshPanel(); });
+      var clr = el('button', 'btn small ghost', '장소 모두 지우기'); clr.type = 'button';
+      clr.addEventListener('click', function () {
+        state.map.places = {}; SFX.pop(); renderMakeGrid(); refreshPanel(); renderStepbar();
+      });
+      tools.appendChild(er); tools.appendChild(clr);
+      p.appendChild(tools);
+      /* 다음 단계 게이트 */
+      var gl = el('ul', 'gate-list');
+      function gateLi(ok, label) {
+        var li = el('li', ok ? 'ok' : '');
+        li.appendChild(el('span', 'mark', ok ? '✓' : '!'));
+        li.appendChild(el('span', null, label));
+        gl.appendChild(li);
+      }
+      gateLi(gates.countOk, '장소 6개 이상 놓기 (지금 ' + gates.cnt + '개)');
+      gateLi(gates.pathOk, '보물까지 가는 길이 막히지 않기' + (gates.path ? '' : ' (지금은 가는 길이 막혔어요)'));
+      gateLi(gates.sidesOk, '보물 왼쪽 칸이나 오른쪽 칸 중 한 곳에 장소 놓기');
+      p.appendChild(gl);
+      var nx = el('button', 'btn coral', '다음: 길 안내 쓰기'); nx.type = 'button';
+      nx.style.marginTop = '14px'; nx.style.width = '100%';
+      nx.disabled = !gates.all;
+      nx.addEventListener('click', function () { state.step = 4; renderStepbar(); refreshPanel(); });
+      p.appendChild(nx);
+      if (!gates.all) {
+        var hd = el('p', 'desc', '위의 세 가지를 모두 채우면 다음 단계로 갈 수 있어요.');
+        hd.style.marginTop = '9px';
+        p.appendChild(hd);
+      }
+    }
+
+    /* ------------ 4단계: 쓰기 패널 ------------ */
+    function panelWrite(p) {
+      var m = state.map;
+      /* 패널을 새로 그리는 시점(단계 진입·난이도 변경 등)은 타이핑 중이 아니므로
+         피드백을 바로 보여 줄 수 있게 타이핑 상태를 풀어 둔다. */
+      spellTyping = false;
+      if (spellIdleTimer) { clearTimeout(spellIdleTimer); spellIdleTimer = null; }
+      p.appendChild(el('h2', 'font-display', '4단계 · 길 안내 쓰기'));
+      var d = el('p', 'desc', '난이도를 고르고 안내문을 직접 써요. 쉬움은 문장 도움이 처음부터 펼쳐져 있고, 보통은 틀린 철자의 바른 형태를 보여줘요. 도전은 틀린 단어에 밑줄만 그어 알려줘요.');
+      p.appendChild(d);
+
+      var drow = el('div', 'diff-row');
+      Object.keys(DIFFS).forEach(function (k) {
+        var D = DIFFS[k];
+        var b = el('button', 'diff-card' + (m.diff === k ? ' selected' : ''));
+        b.type = 'button';
+        b.appendChild(el('div', 'stars', D.stars));
+        b.appendChild(el('div', 'dn', D.ko));
+        var rule = D.minSent + '문장 이상';
+        if (D.needNextTo) rule += ' · next to';
+        if (D.minTurns) rule += ' · 돌기 ' + D.minTurns + '번';
+        b.appendChild(el('div', 'dr', rule));
+        b.appendChild(el('div', 'dh', D.help));
+        b.appendChild(el('div', 'dr', D.helpDetail));
+        b.addEventListener('click', function () { m.diff = k; SFX.click(); refreshPanel(); });
+        drow.appendChild(b);
+      });
+      p.appendChild(drow);
+      var diffHelpNote = el('p', 'desc');
+      diffHelpNote.innerHTML = '지금 난이도 도움: <b>' + DIFFS[m.diff].help + '</b> — ' + DIFFS[m.diff].helpDetail + '. 문장 수 조건은 그대로예요 (' + DIFFS[m.diff].minSent + '문장 이상' + (DIFFS[m.diff].needNextTo ? ' · next to' : '') + (DIFFS[m.diff].minTurns ? ' · 돌기 ' + DIFFS[m.diff].minTurns + '번 이상' : '') + ').';
+      diffHelpNote.style.margin = '0 0 12px';
+      p.appendChild(diffHelpNote);
+
+      /* 표현 틀 + 단어 은행 패널. 쉬움은 처음부터 펼쳐져 있고(완전 단어 은행),
+         보통·도전은 접힌 채로 시작해서 필요하면 눌러서 연다. */
+      var helpStartsOpen = m.diff === 'easy';
+      var helpToggle = el('button', 'frames-help-toggle' + (helpStartsOpen ? ' open' : ''));
+      helpToggle.type = 'button';
+      helpToggle.setAttribute('aria-expanded', helpStartsOpen ? 'true' : 'false');
+      var helpToggleLabel = el('span', null, helpStartsOpen ? '문장 도움 접기' : '문장 도움 보기');
+      var helpToggleChev = el('span', 'chev', '▼');
+      helpToggle.appendChild(helpToggleLabel);
+      helpToggle.appendChild(helpToggleChev);
+      var helpBox = el('div', 'frames-help');
+      helpBox.id = 'framesHelpBox';
+      helpBox.style.display = helpStartsOpen ? 'block' : 'none';
+      helpToggle.addEventListener('click', function () {
+        var open = helpBox.style.display !== 'none';
+        helpBox.style.display = open ? 'none' : 'block';
+        helpToggle.classList.toggle('open', !open);
+        helpToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+        helpToggleLabel.textContent = open ? '문장 도움 보기' : '문장 도움 접기';
+        SFX.click();
+      });
+      p.appendChild(helpToggle);
+      p.appendChild(helpBox);
+
+      /* ---- 문장 도움: 보고 직접 쓰는 참고 자료 (눌러서 넣기 없음) ----
+         예전의 다섯 그룹(방향 단어 은행, 이동 표현, 위치 표현, 장소마다 만든 문장,
+         장소 이름 은행)을 문장 틀과 단어 두 그룹으로 줄였다. */
+      var placedKeys = [];
+      Object.keys(m.places).forEach(function (k) {
+        if (placedKeys.indexOf(m.places[k]) === -1 && PLACES[m.places[k]]) placedKeys.push(m.places[k]);
+      });
+      helpBox.appendChild(el('div', 'frames-label', '문장 틀'));
+      var frameList = el('ul', 'frame-list');
+      [
+        'Go straight.',
+        'Go straight ___ blocks.',
+        'Go straight ___ blocks and turn ___.',
+        'Turn left.  ·  Turn right.',
+        "It's on your left.  ·  It's on your right.",
+        "It's next to the ___."
+      ].forEach(function (line) { frameList.appendChild(el('li', 'frame-line', line)); });
+      helpBox.appendChild(frameList);
+      helpBox.appendChild(el('div', 'frames-label', '단어'));
+      helpBox.appendChild(el('p', 'word-line', 'Go · straight · turn · left · right · block · blocks · corner · next to · one · two · three · four · five'));
+      if (placedKeys.length) {
+        var placeLine = el('p', 'word-line');
+        placeLine.appendChild(el('span', null, '지도에 있는 장소: '));
+        placeLine.appendChild(el('span', 'place-name', placedKeys.map(function (pk) { return PLACES[pk].en; }).join(' · ')));
+        helpBox.appendChild(placeLine);
+      } else {
+        var noPlace = el('p', 'desc', '장소를 놓으면 여기에 그 장소 이름이 나타나요.');
+        noPlace.style.margin = '0 0 6px';
+        helpBox.appendChild(noPlace);
+      }
+
+      var ta = el('textarea', 'directions-input');
+      ta.id = 'directionsInput';
+      ta.placeholder = m.diff === 'easy'
+        ? '여기에 영어 길 안내문을 직접 써요. 위에 펼쳐진 문장 도움을 보고 타이핑해요.'
+        : '여기에 영어 길 안내문을 직접 써요. 「문장 도움 보기」를 펼치면 단어와 문장 틀을 볼 수 있어요.';
+      ta.value = m.text;
+      ta.addEventListener('input', function () {
+        m.text = ta.value;
+        /* 타이핑하는 동안에는 문장 확인 피드백을 띄우지 않는다.
+           타이핑을 멈춘 지 2초가 지나면 그때의 문장으로 피드백을 보여 준다. */
+        spellTyping = true;
+        if (spellIdleTimer) clearTimeout(spellIdleTimer);
+        spellIdleTimer = setTimeout(function () {
+          spellIdleTimer = null;
+          spellTyping = false;
+          renderChecklist();
+        }, 2000);
+        renderChecklist();
+        scheduleDraftSave();
+      });
+      ta.addEventListener('blur', function () {
+        /* 입력 칸을 벗어나면 2초를 기다리지 않고 바로 피드백을 보여 준다. */
+        if (spellIdleTimer) { clearTimeout(spellIdleTimer); spellIdleTimer = null; }
+        if (spellTyping) { spellTyping = false; renderChecklist(); }
+      });
+      p.appendChild(ta);
+
+      var spellBox = el('div', 'spell-box');
+      spellBox.id = 'spellFeedback';
+      spellBox.style.display = 'none';
+      p.appendChild(spellBox);
+
+      var tt = el('div', 'text-tools');
+      var del = el('button', 'btn small ghost', '마지막 문장 지우기'); del.type = 'button';
+      del.addEventListener('click', function () {
+        var sents = splitSentences(m.text);
+        sents.pop();
+        m.text = sents.join(' ');
+        ta.value = m.text; SFX.pop();
+        /* 버튼을 눌러 문장을 지운 것은 타이핑이 끝난 행동이라 피드백을 바로 갱신한다 */
+        if (spellIdleTimer) { clearTimeout(spellIdleTimer); spellIdleTimer = null; }
+        spellTyping = false;
+        renderChecklist();
+      });
+      tt.appendChild(del);
+      /* 자동으로 고쳐 주는 버튼은 두지 않는다. 학생이 보고 직접 고쳐 쓴다. */
+      p.appendChild(tt);
+
+      var cl = el('ul', 'checklist'); cl.id = 'checklistList';
+      p.appendChild(cl);
+
+      var acts = el('div', 'panel-actions');
+      var walk = el('button', 'btn', '걸어 보기'); walk.type = 'button';
+      walk.addEventListener('click', startWalkTest);
+      var done = el('button', 'btn coral', '완성하기'); done.type = 'button';
+      done.id = 'finishBtn';
+      done.addEventListener('click', finishQuest);
+      acts.appendChild(walk); acts.appendChild(done);
+      p.appendChild(acts);
+      renderChecklist();
+    }
+    function renderChecklist() {
+      var list = $('checklistList');
+      if (!list) return;
+      try { renderSpellFeedback(); } catch (e) { /* 철자 표시 실패가 체크리스트를 막지 않게 */ }
+      var res = computeChecklist(state.map);
+      list.innerHTML = '';
+      res.items.forEach(function (it) {
+        var li = el('li', it.ok ? 'ok' : 'bad');
+        li.appendChild(el('span', 'mark', it.ok ? '✓' : '!'));
+        var box = el('span');
+        box.appendChild(document.createTextNode(it.label));
+        /* 타이핑 중에는 문장 확인 힌트도 띄우지 않는다 (피드백 박스와 같은 규칙) */
+        if (!it.ok && it.hint && !(spellTyping && it.id === 'spell')) box.appendChild(el('span', 'hint', it.hint));
+        li.appendChild(box);
+        list.appendChild(li);
+      });
+      var fb = $('finishBtn');
+      if (fb) fb.disabled = !res.allOk;
+      renderStepbarLight();
+    }
+    function renderStepbarLight() {
+      /* 단계 탭의 완료 표시만 가볍게 갱신 (포커스 방해 없이) */
+      var bar = $('stepbar');
+      if (!bar || !bar.children.length) return;
+      STEPS.forEach(function (st, i) {
+        var tab = bar.children[i];
+        if (!tab) return;
+        var done = stepDone(st.n);
+        tab.classList.toggle('done', done && state.step !== st.n);
+        var n = tab.querySelector('.n');
+        if (n) n.textContent = done && state.step !== st.n ? '✓' : String(st.n);
+      });
+    }
+
+    /* ------------ 선택 팝업 ------------ */
+    var pickerCleanup = null;
+    function openPicker(title, desc, items, onPick) {
+      $('pickerTitle').textContent = title;
+      $('pickerDesc').textContent = desc || '';
+      var list = $('pickerList'); list.innerHTML = '';
+      items.forEach(function (it) {
+        var b = el('button', 'picker-item', it.label);
+        b.type = 'button';
+        b.addEventListener('click', function () {
+          closePicker(); SFX.click(); onPick(it.value);
+        });
+        list.appendChild(b);
+      });
+      $('pickerModal').classList.add('open');
+    }
+    function closePicker() { $('pickerModal').classList.remove('open'); }
+    $('pickerCloseBtn').addEventListener('click', closePicker);
+
+    /* ------------ 걸어 보기 (만들기) ------------ */
+    function stopWalk() {
+      if (walkPlayer) { walkPlayer.stop(); walkPlayer = null; }
+      var ws = $('walkStatus');
+      if (ws) { ws.className = 'walk-status'; ws.textContent = ''; }
+      var wl = $('walkSentences');
+      if (wl) Array.prototype.forEach.call(wl.children, function (li) { li.classList.remove('now'); });
+    }
+    function renderWalkSentences(sim, highlight) {
+      var list = $('walkSentences');
+      if (!list) return;
+      list.innerHTML = '';
+      sim.sentences.forEach(function (s, i) {
+        var li = el('li', i === highlight ? 'now' : '');
+        li.appendChild(el('span', 'sn', (i + 1) + '.'));
+        var box = el('span');
+        box.appendChild(document.createTextNode(s));
+        var tr = el('span', 'hint', translateSentence(sim.parsed[i]));
+        tr.style.display = 'block'; tr.style.color = 'var(--ink-soft)'; tr.style.fontSize = '13px';
+        box.appendChild(tr);
+        li.appendChild(box);
+        li.style.cursor = 'default';
+        list.appendChild(li);
+      });
+    }
+    function startWalkTest() {
+      /* 걸어 보기를 누르면 타이핑이 끝난 것으로 보고 피드백을 바로 보여 준다 */
+      if (spellIdleTimer) { clearTimeout(spellIdleTimer); spellIdleTimer = null; }
+      spellTyping = false;
+      var m = state.map;
+      if (!m.treasure) { toast('보물을 먼저 숨겨 주세요.'); return; }
+      if (!splitSentences(m.text).length) { toast('길 안내문을 먼저 써 주세요.'); return; }
+      stopWalk();
+      var sim = simulate(m, m.text);
+      var ws = $('walkStatus');
+      ws.className = 'walk-status show playing';
+      ws.textContent = '안내문대로 걸어 보는 중이에요…';
+      renderWalkSentences(sim, -1);
+      makerWalkerPos = { r: m.start.r, c: m.start.c, dir: startDir(m) };
+      walkPlayer = playFrames(sim.frames, {
+        onFrame: function (f) {
+          makerWalkerPos = { r: f.r, c: f.c, dir: f.dir };
+          setWalker($('makeGridWrap'), $('makeWalker'), $('makeWalkerIcon'), $('makeWalkerArrow'), m.char, makerWalkerPos);
+          setCompass($('compassNeedle'), $('compassText'), f.dir);
+          if (f.ev === 'step') SFX.step();
+          if (f.ev === 'turn') SFX.turn();
+          if (f.ev === 'bump') { SFX.bump(); bumpAnim($('makeWalker'), f.dir); }
+          if (f.sentIdx >= 0) {
+            ws.innerHTML = '<b>' + (f.sentIdx + 1) + '번 문장:</b> ' + esc(sim.sentences[f.sentIdx]) +
+              '<br/>' + esc(translateSentence(sim.parsed[f.sentIdx]));
+            renderWalkSentences(sim, f.sentIdx);
+          }
+        },
+        onDone: function () {
+          walkPlayer = null;
+          renderWalkSentences(sim, -1);
+          if (sim.arrived) {
+            ws.className = 'walk-status show success';
+            ws.innerHTML = '<b>보물 도착!</b> 안내문대로 걸으면 보물 바로 옆에 도착해요.';
+            SFX.good();
+          } else {
+            ws.className = 'walk-status show fail';
+            var why;
+            if (!sim.adjacent) why = '보물 옆까지 가지 못했어요. 마지막에 선 칸에서 보물까지 ' +
+              (Math.abs(sim.final.r - m.treasure.r) + Math.abs(sim.final.c - m.treasure.c)) + '칸 떨어져 있어요.';
+            else why = '보물 옆에는 도착했지만, 마지막 위치 문장(왼쪽/오른쪽/옆)이 실제와 달라요.';
+            ws.innerHTML = '<b>아직 도착하지 못했어요.</b><br />' + esc(why) +
+              (sim.blockedNotes.length ? '<br />' + esc(sim.blockedNotes[0].msg) : '');
+            SFX.bad();
+          }
+          renderChecklist();
+        }
+      });
+    }
+    function bumpAnim(walkerEl, dir) {
+      var d = DIRS[dir];
+      walkerEl.style.setProperty('--bx', (d.dc * 7) + 'px');
+      walkerEl.style.setProperty('--by', (d.dr * 7) + 'px');
+      walkerEl.classList.remove('bump');
+      void walkerEl.offsetWidth;
+      walkerEl.classList.add('bump');
+    }
+
+    /* ------------ 4단계 방향 도우미 (만들기) ------------ */
+    function describeCell(m, r, c) {
+      if (!inBounds(r, c)) return '지도 밖';
+      var pk = m.places[key(r, c)];
+      if (pk && PLACES[pk]) return PLACES[pk].en;
+      if (m.treasure && m.treasure.r === r && m.treasure.c === c) return '보물 칸';
+      if (m.start.r === r && m.start.c === c) return 'START';
+      return '길';
+    }
+    function updateMakerAround() {
+      var pos = makerWalkerPos || makerHomePos();
+      var F = DIRS[pos.dir], L = DIRS[(pos.dir + 3) % 4], R = DIRS[(pos.dir + 1) % 4];
+      var t = $('mhAround');
+      if (t) t.textContent = '앞: ' + describeCell(state.map, pos.r + F.dr, pos.c + F.dc) +
+        ' · 왼쪽: ' + describeCell(state.map, pos.r + L.dr, pos.c + L.dc) +
+        ' · 오른쪽: ' + describeCell(state.map, pos.r + R.dr, pos.c + R.dc) +
+        ' · 지금 ' + DIRS[pos.dir].ko + '을(를) 보고 있어요';
+    }
+    function refreshMakerWalker() {
+      var pos = makerWalkerPos || makerHomePos();
+      setWalker($('makeGridWrap'), $('makeWalker'), $('makeWalkerIcon'), $('makeWalkerArrow'), state.map.char, pos);
+      setCompass($('compassNeedle'), $('compassText'), pos.dir);
+      updateMakerAround();
+    }
+    $('mhFwd').addEventListener('click', function () {
+      stopWalk();
+      if (!makerWalkerPos) makerWalkerPos = makerHomePos();
+      var d = DIRS[makerWalkerPos.dir];
+      var nr = makerWalkerPos.r + d.dr, nc = makerWalkerPos.c + d.dc;
+      if (isBlocked(state.map, nr, nc)) { bumpAnim($('makeWalker'), makerWalkerPos.dir); toast('앞이 막혀서 갈 수 없어요.'); return; }
+      makerWalkerPos.r = nr; makerWalkerPos.c = nc;
+      refreshMakerWalker();
+    });
+    $('mhLeft').addEventListener('click', function () {
+      stopWalk();
+      if (!makerWalkerPos) makerWalkerPos = makerHomePos();
+      makerWalkerPos.dir = (makerWalkerPos.dir + 3) % 4;
+      refreshMakerWalker();
+    });
+    $('mhRight').addEventListener('click', function () {
+      stopWalk();
+      if (!makerWalkerPos) makerWalkerPos = makerHomePos();
+      makerWalkerPos.dir = (makerWalkerPos.dir + 1) % 4;
+      refreshMakerWalker();
+    });
+    $('mhReset').addEventListener('click', function () {
+      stopWalk();
+      makerWalkerPos = makerHomePos();
+      refreshMakerWalker();
+    });
+
+    /* ------------ 완성 · 제출 ------------ */
+    var lastSnapshot = null; // 완성한 지도 데이터 사본
+    var submittedCurrent = false;
+    function finishQuest() {
+      var res = computeChecklist(state.map);
+      if (!res.allOk) { toast('체크리스트를 모두 채워야 완성할 수 있어요.'); return; }
+      if (!state.map._id) state.map._id = 'm' + Date.now();
+      lastSnapshot = clone(state.map);
+      var existing = -1;
+      state.myMaps.forEach(function (x, i) { if (x.data._id && x.data._id === state.map._id) existing = i; });
+      var rec = { savedAt: new Date(), data: clone(lastSnapshot) };
+      if (existing >= 0) state.myMaps[existing] = rec; else state.myMaps.push(rec);
+      submittedCurrent = false;
+      enterDone(lastSnapshot);
+    }
+    function enterDone(data) {
+      showScreen('screen-done');
+      $('doneSub').innerHTML = '<b>' + esc(data.cls) + ' ' + (data.makerNum ? data.makerNum + '번 ' : '') + esc(data.makerName) + '</b> 친구의 퀘스트가 완성됐어요.<br />제출 버튼을 누르면 우리 반 제출함에 올라가고, 친구들이 내 이름을 눌러 지도 목록에서 이 지도를 골라 열 수 있어요. 지도를 여러 개 만들면 제출한 지도마다 목록에 하나씩 쌓여서, 친구가 원하는 지도를 골라 열 수 있어요.';
+      updateSubmitBox();
+    }
+    function updateSubmitBox() {
+      var btn = $('submitBtn'), title = $('submitTitle'), desc = $('submitDesc');
+      if (submittedCurrent) {
+        title.textContent = '제출 완료!';
+        desc.innerHTML = '우리 반 제출함에 올라갔어요. 선생님 화면에서도 제출한 것으로 보여요.<br />이 지도를 고쳐서 다시 제출하면 같은 지도가 새로 바뀌고, 새 지도를 만들어 제출하면 내 지도 목록에 하나 더 쌓여요.';
+        btn.textContent = '다시 제출하기';
+        btn.disabled = false;
+      } else if (!FB.ready) {
+        title.textContent = '제출함 서버에 연결하지 못했어요';
+        desc.innerHTML = '지도는 완성됐고 이 앱 안에 보관했어요.<br />인터넷 연결을 확인하고 새로고침하면 제출 버튼이 켜져요.';
+        btn.textContent = '서버 연결 후 제출할 수 있어요';
+        btn.disabled = true;
+      } else {
+        title.textContent = '아직 제출하지 않았어요';
+        desc.innerHTML = '제출하면 선생님 화면에서 제출한 것을 확인할 수 있고,<br />우리 반 친구들이 내 이름 아래 지도 목록에서 이 지도를 골라 열 수 있어요.';
+        btn.textContent = '제출하기';
+        btn.disabled = false;
+      }
+    }
+    $('submitBtn').addEventListener('click', function () {
+      if (!lastSnapshot) return;
+      if (!FB.ready) { toast('제출함 서버가 아직 연결되지 않았어요.'); return; }
+      var btn = $('submitBtn');
+      btn.disabled = true; btn.textContent = '제출하는 중…';
+      submitMapToServer(lastSnapshot).then(function () {
+        submittedCurrent = true;
+        /* 제출했으니 이어서 하기 저장본은 지운다. 제출 직후 같은 내용이
+           자동 저장으로 되살아나지 않게 지금 상태를 제출 완료 상태로 기억한다. */
+        suppressDraftSignature = draftSignature();
+        deleteOwnDraft(lastSnapshot.cls, lastSnapshot.makerNum, lastSnapshot.makerName);
+        updateSubmitBox();
+        fireConfetti();
+        toast('제출 완료! 우리 반 친구들이 내 지도를 열 수 있어요.');
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = '제출하기';
+        toast('제출이 안 됐어요. 인터넷 연결을 확인하고 다시 눌러 주세요.');
+      });
+    });
+    /* 지도 그림(PNG) 그리기 — 보물은 그리지 않는다 */
+    function renderMapImage(d) {
+      var W = 880, H = 1180;
+      var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var x = cv.getContext('2d');
+      var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      x.fillStyle = dark ? '#232d2a' : '#fffaf0'; x.fillRect(0, 0, W, H);
+      x.fillStyle = '#44828c'; x.fillRect(0, 0, W, 118);
+      x.fillStyle = '#fff';
+      x.font = '900 44px "Jua","Noto Sans KR",sans-serif';
+      x.fillText('나만의 보물지도 퀘스트', 36, 58);
+      x.font = '700 25px "Noto Sans KR",sans-serif';
+      var diff = DIFFS[d.diff];
+      x.fillText(d.cls + '  ' + (d.makerNum ? d.makerNum + '번 ' : '') + d.makerName + '   ·   난이도: ' + diff.ko + ' ' + diff.stars, 36, 98);
+      /* 지도 */
+      var gx = 70, gy = 148, cell = 106, gap = 5;
+      x.fillStyle = dark ? '#525c52' : '#d8cfb4';
+      roundRect(x, gx - gap, gy - gap, cell * 7 + gap * 8, cell * 7 + gap * 8, 16); x.fill();
+      for (var r = 0; r < SIZE; r++) for (var c = 0; c < SIZE; c++) {
+        var px = gx + c * (cell + gap), py = gy + r * (cell + gap);
+        var pk = d.places[key(r, c)];
+        var isStart = d.start.r === r && d.start.c === c;
+        x.fillStyle = pk ? PLACES[pk].color : (isStart ? '#44828c' : (dark ? '#3d453f' : '#e9e2d0'));
+        roundRect(x, px, py, cell, cell, 12); x.fill();
+        if (pk) {
+          x.fillStyle = '#fff';
+          x.font = '900 19px "Noto Sans KR",sans-serif';
+          x.textAlign = 'center';
+          wrapCentered(x, PLACES[pk].en, px + cell / 2, py + cell / 2 + 7, cell - 10, 21);
+          x.textAlign = 'left';
+        } else if (isStart) {
+          x.fillStyle = '#fff';
+          x.font = '900 21px "Jua","Noto Sans KR",sans-serif';
+          x.textAlign = 'center';
+          x.fillText('START', px + cell / 2, py + cell / 2 - 2);
+          x.fillStyle = '#ffe9a8';
+          x.font = '900 24px sans-serif';
+          var arrows = ['↑', '→', '↓', '←'];
+          x.fillText(arrows[startDir(d)], px + cell / 2, py + cell / 2 + 30);
+          x.textAlign = 'left';
+        }
+      }
+      /* 안내문 */
+      var ty = gy + cell * 7 + gap * 8 + 44;
+      x.fillStyle = dark ? '#f2ede1' : '#2d2a26';
+      x.font = '900 27px "Noto Sans KR",sans-serif';
+      x.fillText('길 안내문 (Directions)', 70, ty);
+      x.font = '500 24px "Noto Sans KR",sans-serif';
+      var lines = wrapText(x, splitSentences(d.text).join(' '), W - 140);
+      lines.slice(0, 6).forEach(function (ln, i) { x.fillText(ln, 70, ty + 38 + i * 33); });
+      /* 체크리스트 요약 */
+      var res = computeChecklist(d);
+      var oy = H - 92;
+      x.font = '700 21px "Noto Sans KR",sans-serif';
+      x.fillStyle = dark ? '#b9b2a2' : '#6f6a5e';
+      var passed = res.items.filter(function (i2) { return i2.ok; }).length;
+      x.fillText('체크리스트 ' + passed + '/' + res.items.length + ' 통과 · 보물 위치는 그림에 없어요. 안내문을 따라가 보세요!', 70, oy);
+      return cv.toDataURL('image/png');
+    }
+    function roundRect(x, px, py, w, h, r) {
+      x.beginPath();
+      x.moveTo(px + r, py);
+      x.arcTo(px + w, py, px + w, py + h, r);
+      x.arcTo(px + w, py + h, px, py + h, r);
+      x.arcTo(px, py + h, px, py, r);
+      x.arcTo(px, py, px + w, py, r);
+      x.closePath();
+    }
+    function wrapText(x, text, maxW) {
+      var words = text.split(' '), lines = [], cur = '';
+      words.forEach(function (w) {
+        var t = cur ? cur + ' ' + w : w;
+        if (x.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; }
+        else cur = t;
+      });
+      if (cur) lines.push(cur);
+      return lines;
+    }
+    function wrapCentered(x, text, cx, cy, maxW, lh) {
+      var words = text.split(' '), lines = [], cur = '';
+      words.forEach(function (w) {
+        var t = cur ? cur + ' ' + w : w;
+        if (x.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; }
+        else cur = t;
+      });
+      if (cur) lines.push(cur);
+      lines.forEach(function (ln, i) {
+        x.fillText(ln, cx, cy + (i - (lines.length - 1) / 2) * lh);
+      });
+    }
+    function downloadDataURL(url, filename) {
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    $('backToEditBtn').addEventListener('click', function () { submittedCurrent = false; enterMaker(); });
+    $('sameMapNewTextBtn').addEventListener('click', function () {
+      var copy = clone(state.map);
+      copy._id = null; copy.text = '';
+      copy.title = (copy.title || '내 마을 지도') + ' 2';
+      state.map = copy; state.step = 4;
+      submittedCurrent = false;
+      enterMaker(); toast('같은 지도를 복사했어요. 지도 이름에 2가 붙고, 안내문만 새로 쓰면 돼요.');
+    });
+    $('newMapBtn').addEventListener('click', function () {
+      state.map = freshMap(); state.step = 1;
+      submittedCurrent = false;
+      enterMaker(); toast('새 지도를 만들어요!');
+    });
+    $('doneShelfBtn').addEventListener('click', openShelf);
+    $('doneFriendBtn').addEventListener('click', openFriendList);
+
+    /* ------------ 내 지도함 ------------ */
+    function openShelf() { renderShelf(); $('shelfModal').classList.add('open'); }
+    function closeShelf() { $('shelfModal').classList.remove('open'); }
+    $('shelfBtn').addEventListener('click', openShelf);
+    $('shelfCloseBtn').addEventListener('click', closeShelf);
+    function shelfItem(rec) {
+      var d = rec.data;
+      var box = el('div', 'shelf-item');
+      var av = el('span', 'avatar'); av.appendChild(svgUse(CHARS[d.char].icon)); box.appendChild(av);
+      var meta = el('div', 'meta');
+      meta.appendChild(el('div', 'nm', d.cls + ' ' + (d.makerNum ? d.makerNum + '번 ' : '') + d.makerName + '의 지도'));
+      meta.appendChild(el('div', 'dt',
+        DIFFS[d.diff].ko + ' · 장소 ' + Object.keys(d.places).length + '개 · ' +
+        (rec.savedAt ? rec.savedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '')));
+      box.appendChild(meta);
+      var ed = el('button', 'btn small ghost', '이어서 만들기'); ed.type = 'button';
+      ed.addEventListener('click', function () {
+        state.map = clone(d); state.step = 4;
+        submittedCurrent = false;
+        closeShelf(); enterMaker();
+      });
+      box.appendChild(ed);
+      var sh = el('button', 'btn small', '제출 화면'); sh.type = 'button';
+      sh.addEventListener('click', function () { lastSnapshot = clone(d); submittedCurrent = false; closeShelf(); enterDone(lastSnapshot); });
+      box.appendChild(sh);
+      return box;
+    }
+    function renderShelf() {
+      var list = $('shelfList'); list.innerHTML = '';
+      if (!state.myMaps.length) list.appendChild(el('div', 'shelf-empty', '아직 만든 지도가 없어요.<br />지도를 완성하면 여기에 모여요.'));
+      state.myMaps.forEach(function (rec) { list.appendChild(shelfItem(rec)); });
+    }
+
+    /* ============================================================
+       친구 지도 목록 (제출함에서 같은 반 친구 불러오기)
+       ============================================================ */
+    var friendWatchRef = null;
+    var friendViewNum = null; // 친구 한 명을 골라 그 학생의 지도 목록을 보고 있을 때의 번호
+    function openFriendList() {
+      friendViewNum = null;
+      $('friendModal').classList.add('open');
+      renderFriendList();
+      if (!FB.ready || !state.cls) return;
+      if (friendWatchRef) friendWatchRef.off();
+      friendWatchRef = FB.db.ref('classes/' + state.cls);
+      friendWatchRef.on('value', function () { renderFriendList(); });
+    }
+    function closeFriendList() {
+      $('friendModal').classList.remove('open');
+      friendViewNum = null;
+      if (friendWatchRef) { friendWatchRef.off(); friendWatchRef = null; }
+    }
+    $('friendListBtn').addEventListener('click', openFriendList);
+    $('friendCloseBtn').addEventListener('click', closeFriendList);
+    function renderFriendList() {
+      var list = $('friendList'); list.innerHTML = '';
+      var desc = $('friendModalDesc');
+      if (!state.cls) {
+        list.appendChild(el('div', 'shelf-empty', '먼저 반과 번호, 이름으로 입장해 주세요.'));
+        return;
+      }
+      if (!FB.ready) {
+        var box = el('div', 'shelf-empty');
+        box.innerHTML = '제출함 서버에 연결하지 못했어요.<br />인터넷 연결을 확인하고 다시 열어 보면, 제출한 친구 이름이 여기에 뜨고<br />눌러서 그 친구의 지도를 골라 열 수 있어요.';
+        list.appendChild(box);
+        return;
+      }
+      list.appendChild(el('div', 'shelf-empty', state.cls + ' 친구들의 제출 지도를 불러오는 중이에요…'));
+      var viewAtRequest = friendViewNum;
+      FB.db.ref('classes/' + state.cls).once('value').then(function (snap) {
+        if (!$('friendModal').classList.contains('open')) return;
+        var val = snap.val() || {};
+        var maps = val.maps || {};
+        list.innerHTML = '';
+        /* 한 친구를 골라 둔 상태면, 그 친구의 지도 목록을 보여 준다 */
+        if (viewAtRequest !== null && friendViewNum === viewAtRequest) {
+          renderFriendMaps(list, desc, viewAtRequest, studentMapsList(maps[viewAtRequest]));
+          return;
+        }
+        if (desc) desc.textContent = '우리 반 친구들이 제출한 보물지도예요. 친구 이름을 누르면 그 친구가 만든 지도 목록이 뜨고, 그중 하나를 골라 열 수 있어요. 지도를 여러 개 만든 친구는 목록에서 원하는 지도를 고르면 돼요.';
+        var nums = Object.keys(maps).map(Number).filter(function (n) { return !isNaN(n); }).sort(function (a, b) { return a - b; });
+        var shown = 0;
+        nums.forEach(function (n) {
+          var recs = studentMapsList(maps[n]).filter(function (rec) { return !!rec.treasure; });
+          if (!recs.length) return;
+          shown++;
+          var first = recs[0];
+          var item = el('button', 'friend-item');
+          item.type = 'button';
+          var av = el('span', 'avatar'); av.appendChild(svgUse(CHARS[first.char] ? CHARS[first.char].icon : 'i-bear'));
+          item.appendChild(av);
+          var meta = el('div', 'meta');
+          meta.appendChild(el('div', 'nm', n + '번 ' + (first.makerName || '') + (state.num === n ? ' (나)' : '')));
+          if (recs.length > 1) {
+            meta.appendChild(el('div', 'dt', '지도 ' + recs.length + '개 · 눌러서 골라 열기'));
+          } else {
+            meta.appendChild(el('div', 'dt', '「' + mapDisplayTitle(first) + '」 · ' + (DIFFS[first.diff] ? DIFFS[first.diff].ko : '') + ' · 장소 ' + Object.keys(first.places || {}).length + '개'));
+          }
+          item.appendChild(meta);
+          item.appendChild(el('span', 'badge teal', recs.length > 1 ? '지도 고르기' : '열기'));
+          item.addEventListener('click', function () {
+            if (recs.length === 1) {
+              closeFriendList();
+              state.playReturn = 'maker';
+              enterPlay(mapFromServer(recs[0]));
+            } else {
+              friendViewNum = n;
+              renderFriendList();
+            }
+          });
+          list.appendChild(item);
+        });
+        if (!shown) list.appendChild(el('div', 'shelf-empty', '아직 제출한 친구가 없어요.<br />친구가 제출하면 이름이 여기에 떠요.'));
+      }).catch(function () {
+        list.innerHTML = '';
+        list.appendChild(el('div', 'shelf-empty', '목록을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'));
+      });
+    }
+    /* 친구 한 명이 낸 지도 목록: 지도 이름·난이도·낸 시각으로 골라 연다 */
+    function renderFriendMaps(list, desc, n, recs) {
+      var valid = (recs || []).filter(function (rec) { return !!rec.treasure; });
+      var makerName = valid.length ? (valid[0].makerName || '') : '';
+      if (desc) desc.textContent = n + '번 ' + makerName + ' 친구가 만든 지도 ' + valid.length + '개예요. 열고 싶은 지도를 누르세요.';
+      var back = el('button', 'btn small ghost', '← 친구 목록으로');
+      back.type = 'button';
+      back.style.marginBottom = '12px';
+      back.addEventListener('click', function () { friendViewNum = null; renderFriendList(); });
+      list.appendChild(back);
+      if (!valid.length) {
+        list.appendChild(el('div', 'shelf-empty', '이 친구의 지도가 지금은 없어요.'));
+        return;
+      }
+      valid.forEach(function (rec) {
+        var item = el('button', 'friend-item');
+        item.type = 'button';
+        var av = el('span', 'avatar'); av.appendChild(svgUse(CHARS[rec.char] ? CHARS[rec.char].icon : 'i-bear'));
+        item.appendChild(av);
+        var meta = el('div', 'meta');
+        meta.appendChild(el('div', 'nm', '「' + mapDisplayTitle(rec) + '」'));
+        var dt = (DIFFS[rec.diff] ? DIFFS[rec.diff].ko : '') + ' · 장소 ' + Object.keys(rec.places || {}).length + '개';
+        var when = formatSubmittedAt(rec.submittedAt);
+        if (when) dt += ' · ' + when + ' 제출';
+        meta.appendChild(el('div', 'dt', dt));
+        item.appendChild(meta);
+        item.appendChild(el('span', 'badge teal', '열기'));
+        item.addEventListener('click', function () {
+          closeFriendList();
+          state.playReturn = 'maker';
+          enterPlay(mapFromServer(rec));
+        });
+        list.appendChild(item);
+      });
+    }
+
+    /* ============================================================
+       선생님 화면 (반별·번호별 제출 현황)
+       ============================================================ */
+    var teacherState = { cls: '5-1' };
+    var teacherWatchRef = null;
+    /* 선생님 화면은 학생에게 보이지 않게 비밀번호로 잠근다.
+       비밀번호는 소스에 적어 두지 않는다: 선생님이 처음 열 때 직접 정하고,
+       그 값은 이 창(세션) 안에서만 기억한다. 입장 화면 구석의 작은
+       '선생님 전용' 글자를 눌러야만 열리고, 한 번 확인하면 다시 묻지 않는다.
+       (정적 페이지의 화면 잠금이며, 제출 데이터 자체의 보호는 Firebase
+        인증·보안 규칙이 담당한다.) */
+    var teacherPin = null;
+    var teacherUnlocked = false;
+    $('teacherBtn').addEventListener('click', function () {
+      if (teacherUnlocked) { enterTeacher(); return; }
+      $('pinInput').value = '';
+      $('pinMsg').textContent = '';
+      if (teacherPin) {
+        $('pinTitle').textContent = '선생님 확인';
+        $('pinDesc').textContent = '선생님 비밀번호 4자리를 눌러 주세요.';
+      } else {
+        $('pinTitle').textContent = '선생님 비밀번호 만들기';
+        $('pinDesc').textContent = '처음 한 번만, 선생님이 쓸 비밀번호 4자리를 정해 주세요. 이 창을 닫으면 비밀번호도 사라져요.';
+      }
+      $('pinModal').classList.add('open');
+      setTimeout(function () { $('pinInput').focus(); }, 60);
+    });
+    function enterTeacher() {
+      $('pinModal').classList.remove('open');
+      showScreen('screen-teacher');
+      renderTeacher();
+      if (FB.ready) watchTeacherClass(teacherState.cls);
+    }
+    function tryPin() {
+      var v = $('pinInput').value.trim();
+      if (!teacherPin) {
+        if (!/^\d{4}$/.test(v)) { $('pinMsg').textContent = '숫자 4자리로 정해 주세요.'; return; }
+        teacherPin = v;
+        teacherUnlocked = true;
+        toast('선생님 비밀번호를 정했어요.');
+        enterTeacher();
+        return;
+      }
+      if (v === teacherPin) {
+        teacherUnlocked = true;
+        enterTeacher();
+      } else {
+        $('pinMsg').textContent = '비밀번호가 달라요. 다시 눌러 주세요.';
+        $('pinInput').value = '';
+        $('pinInput').focus();
+      }
+    }
+    $('pinOkBtn').addEventListener('click', tryPin);
+    $('pinInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') tryPin(); });
+    $('pinCloseBtn').addEventListener('click', function () { $('pinModal').classList.remove('open'); });
+    $('teacherBackBtn').addEventListener('click', function () {
+      if (teacherWatchRef) { teacherWatchRef.off(); teacherWatchRef = null; }
+      showScreen('screen-entry');
+    });
+    function watchTeacherClass(cls) {
+      if (teacherWatchRef) teacherWatchRef.off();
+      teacherWatchRef = FB.db.ref('classes/' + cls);
+      teacherWatchRef.on('value', function () { renderTeacher(); });
+    }
+    function renderTeacher() {
+      renderClassChips($('teacherClassChips'), teacherState.cls, function (v) {
+        teacherState.cls = v;
+        renderTeacher();
+        if (FB.ready) watchTeacherClass(v);
+      });
+      var sum = $('teacherSummary'); sum.innerHTML = '';
+      var grid = $('rosterGrid'); grid.innerHTML = '';
+      var note = $('teacherNote');
+      if (!FB.ready) {
+        note.innerHTML = '제출함 서버에 연결하지 못했어요. 인터넷 연결을 확인하고 새로고침하면, 반별·번호별 제출 현황이 여기에 실시간으로 보여요.';
+        for (var n0 = 1; n0 <= CLASS_SIZE; n0++) grid.appendChild(rosterCell(n0, null, null));
+        sum.appendChild(el('span', 'sum-chip', '서버 연결 전'));
+        return;
+      }
+      note.textContent = '제출 완료 칸을 누르면 그 학생의 지도를 열어 볼 수 있어요. 지도를 여러 개 낸 학생은 칸에 지도 개수가 보이고, 누르면 지도 목록에서 골라 열 수 있어요. 현황은 자동으로 새로고침돼요.';
+      FB.db.ref('classes/' + teacherState.cls).once('value').then(function (snap) {
+        var val = snap.val() || {};
+        var students = val.students || {}, maps = val.maps || {}, drafts = val.drafts || {};
+        var done = 0, making = 0, totalMaps = 0;
+        grid.innerHTML = '';
+        for (var n = 1; n <= CLASS_SIZE; n++) {
+          var st = students[n] || null, mp = maps[n] || null, dr = drafts[n] || null;
+          var cnt = studentMapsList(mp).filter(function (rec) { return !!rec.treasure; }).length;
+          totalMaps += cnt;
+          if (cnt > 0) done++; else if (st || dr) making++;
+          grid.appendChild(rosterCell(n, st, mp, dr));
+        }
+        sum.innerHTML = '';
+        sum.appendChild(el('span', 'sum-chip done', '제출 완료 ' + done + '명'));
+        sum.appendChild(el('span', 'sum-chip making', '만드는 중 ' + making + '명'));
+        sum.appendChild(el('span', 'sum-chip', '아직 안 들어옴 ' + (CLASS_SIZE - done - making) + '명'));
+        if (totalMaps > done) sum.appendChild(el('span', 'sum-chip', '제출된 지도 모두 ' + totalMaps + '개'));
+      }).catch(function () {
+        note.textContent = '현황을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';
+      });
+    }
+    function rosterCell(n, st, mp, dr) {
+      var recs = studentMapsList(mp).filter(function (rec) { return !!rec.treasure; });
+      var hasMaps = recs.length > 0;
+      var status = hasMaps ? 'done' : ((st || dr) ? 'making' : 'none');
+      var cell = el('div', 'roster-cell st-' + status);
+      var main = el('button', 'roster-main' + (hasMaps ? ' clickable' : ''));
+      main.type = 'button';
+      main.appendChild(el('span', 'rn', n + '번'));
+      main.appendChild(el('span', 'rname', st ? (st.name || '') : (dr ? (dr.name || '') : (hasMaps ? (recs[0].makerName || '') : '—'))));
+      main.appendChild(el('span', 'rst', hasMaps ? ('제출 완료' + (recs.length > 1 ? ' · 지도 ' + recs.length + '개' : '')) : ((st || dr) ? '만드는 중' : '아직 안 들어옴')));
+      if (hasMaps) {
+        main.addEventListener('click', function () {
+          if (recs.length === 1) {
+            state.playReturn = 'teacher';
+            enterPlay(mapFromServer(recs[0]));
+            return;
+          }
+          openPicker(n + '번 ' + (recs[0].makerName || '') + ' 학생의 지도 고르기', '이 학생이 낸 지도 ' + recs.length + '개예요. 열어 볼 지도를 고르세요.',
+            recs.map(function (rec, idx) {
+              var when = formatSubmittedAt(rec.submittedAt);
+              return { label: '「' + mapDisplayTitle(rec) + '」 · ' + (DIFFS[rec.diff] ? DIFFS[rec.diff].ko : '') + (when ? ' · ' + when : ''), value: idx };
+            }),
+            function (idx) {
+              state.playReturn = 'teacher';
+              enterPlay(mapFromServer(recs[idx]));
+            });
+        });
+      } else main.disabled = true;
+      cell.appendChild(main);
+      if (st || hasMaps || dr) {
+        var del = el('button', 'roster-del', '지우기');
+        del.type = 'button';
+        del.setAttribute('aria-label', n + '번 학생의 지도와 기록 지우기');
+        del.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          confirmDeleteStudent(n, st, mp, dr);
+        });
+        cell.appendChild(del);
+      }
+      return cell;
+    }
+    /* 선생님이 한 학생의 제출 지도(여러 개면 모두) + 만드는 중 기록을 함께 지운다.
+       지우면 그 번호 칸은 '아직 안 들어옴'으로 돌아가고, 친구 목록에서도 사라진다.
+       학생이 그 뒤에 다시 제출하면 새 기록이 다시 생긴다. */
+    function confirmDeleteStudent(n, st, mp, dr) {
+      var recs = studentMapsList(mp);
+      var nm = (st && st.name) || (dr && dr.name) || (recs.length ? (recs[0].makerName || '') : '');
+      var what;
+      if (recs.length && dr) what = '제출한 보물지도 ' + recs.length + '개와 만들고 있던 지도(이어서 하기 저장본)';
+      else if (recs.length > 1) what = '제출한 보물지도 ' + recs.length + '개와 기록';
+      else if (recs.length === 1) what = '제출한 보물지도와 기록';
+      else if (dr) what = '만들고 있던 지도(이어서 하기 저장본)';
+      else what = '만드는 중 기록';
+      openConfirm(n + '번 ' + nm + ' 학생의 것을 지울까요?',
+        teacherState.cls + ' ' + n + '번 ' + nm + ' 학생의 ' + what + '을(를) 지워요. 지우면 친구 목록에서도 사라지고, 되돌릴 수 없어요.',
+        '지우기', function () { deleteStudentWork(n); });
+    }
+    function deleteStudentWork(n) {
+      if (!FB.ready) { toast('서버에 연결되어 있지 않아 지울 수 없어요.'); return; }
+      var cls = teacherState.cls;
+      Promise.all([
+        mapsRef(cls).child(String(n)).remove(),
+        studentsRef(cls).child(String(n)).remove(),
+        draftsRef(cls).child(String(n)).remove()
+      ]).then(function () {
+        toast(cls + ' ' + n + '번 학생의 지도와 기록을 지웠어요.');
+        renderTeacher();
+      }).catch(function () {
+        toast('지우지 못했어요. 인터넷 연결을 확인해 주세요.');
+      });
+    }
+
+    /* ============================================================
+       풀기 화면
+       ============================================================ */
+    var playWalk = null; // {r,c,dir}
+    function enterPlay(data) {
+      state.play = { data: data, found: false };
+      playWalk = { r: data.start.r, c: data.start.c, dir: startDir(data) };
+      showScreen('screen-play');
+      $('playWhoText').textContent = data.cls + ' ' + (data.makerNum ? data.makerNum + '번 ' : '') + data.makerName + ' 친구의 지도';
+      $('playWhoAvatar').innerHTML = ''; $('playWhoAvatar').appendChild(svgUse(CHARS[data.char].icon));
+      $('playDiffBadge').textContent = DIFFS[data.diff].ko + ' ' + DIFFS[data.diff].stars;
+      buildPlayGrid();
+      renderPlaySentences(-1);
+      var st = $('playStatus');
+      st.className = 'play-status show info';
+      st.innerHTML = esc(data.makerName) + ' 친구가 숨긴 보물을 찾아요! 안내문을 읽고 방향 도우미로 캐릭터를 직접 움직여 보물까지 걸어간 뒤, <b>그 칸에서 땅 파기</b>를 눌러 보세요.';
+      $('playFoundActions').style.display = 'none';
+      $('playMapHint').textContent = '안내문을 읽고 방향 도우미로 캐릭터를 움직여 보세요. 보물이 있을 칸에 서면 땅 파기를 눌러요.';
+      setPlayWalker();
+    }
+    function buildPlayGrid() {
+      /* 풀기 화면에서는 칸을 눌러 찍지 않는다. 캐릭터를 직접 걸어 보물 칸에 서서 땅을 판다. */
+      buildGrid($('playGrid'), state.play.data, { showTreasure: false });
+    }
+    /* 풀기 전용 통행 판정: 보물이 숨은 길 칸은 들어갈 수 있고, 장소 칸과 지도 밖만 막힌다 */
+    function isBlockedPlay(m, r, c) {
+      if (!inBounds(r, c)) return true;
+      if (m.places[key(r, c)]) return true;
+      return false;
+    }
+    function setPlayWalker() {
+      setWalker($('playGridWrap'), $('playWalker'), $('playWalkerIcon'), $('playWalkerArrow'), state.play.data.char, playWalk);
+      setCompass($('playCompassNeedle'), $('playCompassText'), playWalk.dir);
+    }
+    function renderPlaySentences(highlight) {
+      var list = $('playSentences'); list.innerHTML = '';
+      splitSentences(state.play.data.text).forEach(function (s, i) {
+        var li = el('li', i === highlight ? 'now' : '');
+        li.appendChild(el('span', 'sn', (i + 1) + '.'));
+        li.appendChild(el('span', null, s));
+        li.style.cursor = 'default';
+        list.appendChild(li);
+      });
+    }
+    $('digBtn').addEventListener('click', function () {
+      var P = state.play;
+      if (!P || !P.data.treasure) return;
+      var st = $('playStatus');
+      if (P.found) { toast('이미 보물을 찾았어요!'); return; }
+      if (playWalk.r === P.data.treasure.r && playWalk.c === P.data.treasure.c) {
+        P.found = true;
+        var cell = $('playGrid').children[P.data.treasure.r * SIZE + P.data.treasure.c];
+        if (cell) {
+          cell.classList.add('found-cell', 'treasure-cell');
+          cell.innerHTML = '';
+          cell.appendChild(svgUse((TREASURES[P.data.treasure.kind] || TREASURES.chest).icon, 'cell-icon'));
+        }
+        SFX.good();
+        fireConfetti();
+        st.className = 'play-status show success';
+        st.innerHTML = '<b>' + esc(P.data.makerName) + '의 보물을 찾았다!</b> 안내문을 따라 정확히 걸어왔어요.';
+        $('playFoundActions').style.display = 'flex';
+      } else {
+        SFX.bad();
+        st.className = 'play-status show fail';
+        st.innerHTML = '<b>여기에는 보물이 없어요.</b> 안내문을 다시 읽어보세요. 방향 도우미로 계속 걸을 수 있어요.';
+      }
+    });
+    $('helperFwd').addEventListener('click', function () {
+      if (!state.play) return;
+      var d = DIRS[playWalk.dir];
+      var nr = playWalk.r + d.dr, nc = playWalk.c + d.dc;
+      if (isBlockedPlay(state.play.data, nr, nc)) { SFX.bump(); bumpAnim($('playWalker'), playWalk.dir); toast('앞이 막혀서 갈 수 없어요. 건물 칸으로는 못 들어가요.'); return; }
+      playWalk.r = nr; playWalk.c = nc; SFX.step(); setPlayWalker();
+    });
+    $('helperLeft').addEventListener('click', function () {
+      if (!state.play) return;
+      playWalk.dir = (playWalk.dir + 3) % 4; SFX.turn(); setPlayWalker();
+    });
+    $('helperRight').addEventListener('click', function () {
+      if (!state.play) return;
+      playWalk.dir = (playWalk.dir + 1) % 4; SFX.turn(); setPlayWalker();
+    });
+    $('helperReset').addEventListener('click', function () {
+      if (!state.play) return;
+      playWalk = { r: state.play.data.start.r, c: state.play.data.start.c, dir: startDir(state.play.data) };
+      SFX.pop(); setPlayWalker();
+    });
+    $('playBackBtn').addEventListener('click', function () {
+      if (state.playReturn === 'teacher') { showScreen('screen-teacher'); return; }
+      if (state.cls && state.name) { enterMaker(); }
+      else showScreen('screen-entry');
+    });
+    $('playMakeMineBtn').addEventListener('click', function () {
+      if (state.playReturn === 'teacher') { showScreen('screen-teacher'); return; }
+      if (state.cls && state.name) { state.map = freshMap(); state.step = 1; enterMaker(); }
+      else showScreen('screen-entry');
+    });
+    $('playAnotherBtn').addEventListener('click', function () {
+      if (state.playReturn === 'teacher') { showScreen('screen-teacher'); return; }
+      openFriendList();
+    });
+
+    /* ------------ 폭죽 ------------ */
+    function fireConfetti() {
+      var cv = $('confettiCanvas'), ctx = cv.getContext('2d');
+      cv.width = window.innerWidth; cv.height = window.innerHeight;
+      cv.style.display = 'block';
+      var colors = ['#e2703a', '#44828c', '#e9a13b', '#4d9e57', '#d96c85', '#ffd94d'];
+      var parts = [];
+      for (var i = 0; i < 130; i++) {
+        parts.push({
+          x: cv.width / 2 + (Math.random() - 0.5) * 220, y: cv.height * 0.38,
+          vx: (Math.random() - 0.5) * 11, vy: -Math.random() * 11 - 3,
+          s: 5 + Math.random() * 7, color: colors[i % colors.length],
+          rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3
+        });
+      }
+      var t0 = null;
+      function tick(ts) {
+        if (!t0) t0 = ts;
+        var t = (ts - t0) / 1000;
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        parts.forEach(function (pt) {
+          pt.x += pt.vx; pt.y += pt.vy + t * 3.4; pt.vy += 0.16; pt.rot += pt.vr;
+          ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(pt.rot);
+          ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, 1 - t / 2.4);
+          ctx.fillRect(-pt.s / 2, -pt.s / 2, pt.s, pt.s * 0.62);
+          ctx.restore();
+        });
+        if (t < 2.4) requestAnimationFrame(tick);
+        else { ctx.clearRect(0, 0, cv.width, cv.height); cv.style.display = 'none'; }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    /* ------------ 시작 ------------ */
+    state.playReturn = 'maker';
+    refreshEntry();
+    if (FIREBASE_CONFIG) initFirebase(FIREBASE_CONFIG);
+    updateFbStatusUI();
+</script>
+</body>
+</html>
